@@ -16,7 +16,7 @@ import {
   Info,
   ChevronRight
 } from 'lucide-react';
-import { TaxiDriver, ParcelSize, PaymentMethod, ParcelDelivery } from '../types';
+import { TaxiDriver, ParcelSize, PaymentMethod, ParcelDelivery, SenderUser } from '../types';
 import { POPULAR_ROUTES } from '../data/mockData';
 import { 
   formatCurrency, 
@@ -30,45 +30,55 @@ interface SenderViewProps {
   drivers: TaxiDriver[];
   onBookParcel: (parcel: ParcelDelivery) => void;
   onSelectDeliveryForTracking: (trackingCode: string) => void;
+  onNavigateToDashboard?: () => void;
+  initialPrefillData?: Partial<ParcelDelivery> | null;
+  currentUser?: SenderUser | null;
 }
 
 export const SenderView: React.FC<SenderViewProps> = ({
   drivers,
   onBookParcel,
-  onSelectDeliveryForTracking
+  onSelectDeliveryForTracking,
+  onNavigateToDashboard,
+  initialPrefillData,
+  currentUser
 }) => {
   // Route selection states
-  const [originCity, setOriginCity] = useState<string>('Casablanca');
-  const [destinationCity, setDestinationCity] = useState<string>('Rabat');
+  const [originCity, setOriginCity] = useState<string>(initialPrefillData?.originCity || 'Casablanca');
+  const [destinationCity, setDestinationCity] = useState<string>(initialPrefillData?.destinationCity || 'Rabat');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | 'plenty' | 'doorstep'>('all');
 
   // Selected driver for booking modal
   const [selectedDriver, setSelectedDriver] = useState<TaxiDriver | null>(null);
 
   // Booking Form State
-  const [parcelCategory, setParcelCategory] = useState<ParcelSize>('small');
-  const [parcelTitle, setParcelTitle] = useState('');
-  const [parcelDescription, setParcelDescription] = useState('');
-  const [weightKg, setWeightKg] = useState<number>(2.0);
-  const [isFragile, setIsFragile] = useState(false);
-  const [declaredValue, setDeclaredValue] = useState<number>(50);
+  const [parcelCategory, setParcelCategory] = useState<ParcelSize>(initialPrefillData?.category || 'small');
+  const [parcelTitle, setParcelTitle] = useState(initialPrefillData?.title || '');
+  const [parcelDescription, setParcelDescription] = useState(initialPrefillData?.description || '');
+  const [weightKg, setWeightKg] = useState<number>(initialPrefillData?.weightKg || 2.0);
+  const [isFragile, setIsFragile] = useState(initialPrefillData?.isFragile || false);
+  const [declaredValue, setDeclaredValue] = useState<number>(initialPrefillData?.declaredValue || 50);
 
   // Sender details
-  const [senderName, setSenderName] = useState('Amine Bennani');
-  const [senderPhone, setSenderPhone] = useState('+212 6 61 88 99 00');
-  const [senderNotes, setSenderNotes] = useState('I will meet driver at station bay 2.');
-  const [isDoorstepPickup, setIsDoorstepPickup] = useState(false);
-  const [pickupAddress, setPickupAddress] = useState('');
+  const [senderName, setSenderName] = useState(
+    initialPrefillData?.senderName || currentUser?.name || 'Amine Benjelloun'
+  );
+  const [senderPhone, setSenderPhone] = useState(
+    initialPrefillData?.senderPhone || currentUser?.phone || '+212 6 61 22 33 44'
+  );
+  const [senderNotes, setSenderNotes] = useState(initialPrefillData?.senderNotes || 'I will meet driver at station bay 2.');
+  const [isDoorstepPickup, setIsDoorstepPickup] = useState(initialPrefillData?.isDoorstepPickup || false);
+  const [pickupAddress, setPickupAddress] = useState(initialPrefillData?.pickupAddress || '');
 
   // Receiver details
-  const [receiverName, setReceiverName] = useState('');
-  const [receiverPhone, setReceiverPhone] = useState('');
-  const [receiverAddress, setReceiverAddress] = useState('');
-  const [receiverInstructions, setReceiverInstructions] = useState('');
-  const [isDoorstepDropoff, setIsDoorstepDropoff] = useState(false);
+  const [receiverName, setReceiverName] = useState(initialPrefillData?.receiverName || '');
+  const [receiverPhone, setReceiverPhone] = useState(initialPrefillData?.receiverPhone || '');
+  const [receiverAddress, setReceiverAddress] = useState(initialPrefillData?.receiverAddress || '');
+  const [receiverInstructions, setReceiverInstructions] = useState(initialPrefillData?.receiverInstructions || '');
+  const [isDoorstepDropoff, setIsDoorstepDropoff] = useState(initialPrefillData?.isDoorstepDropoff || false);
 
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash_on_pickup');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialPrefillData?.paymentMethod || 'cash_on_pickup');
 
   // Success screen state
   const [bookedParcel, setBookedParcel] = useState<ParcelDelivery | null>(null);
@@ -189,8 +199,20 @@ export const SenderView: React.FC<SenderViewProps> = ({
       <section className="bg-linear-to-b from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/60 rounded-3xl p-6 sm:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold uppercase tracking-wider">
-              <Car className="w-3.5 h-3.5" /> Intercity Grand Taxi Express Delivery
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold uppercase tracking-wider">
+                <Car className="w-3.5 h-3.5" /> Intercity Grand Taxi Express Delivery
+              </div>
+              {onNavigateToDashboard && (
+                <button
+                  id="hero-go-dashboard-btn"
+                  onClick={onNavigateToDashboard}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                >
+                  <User className="w-3 h-3 text-amber-400" />
+                  <span>My Sender Dashboard</span>
+                </button>
+              )}
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
               Send Parcels From City to City in Hours
@@ -835,18 +857,32 @@ export const SenderView: React.FC<SenderViewProps> = ({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
+                id="success-track-live-btn"
                 onClick={() => {
                   const code = bookedParcel.trackingCode;
                   setBookedParcel(null);
                   onSelectDeliveryForTracking(code);
                 }}
-                className="flex-1 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-md transition-all"
+                className="flex-1 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
               >
                 Track Live on Highway Map
               </button>
+              {onNavigateToDashboard && (
+                <button
+                  id="success-dashboard-btn"
+                  onClick={() => {
+                    setBookedParcel(null);
+                    onNavigateToDashboard();
+                  }}
+                  className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                >
+                  Sender Dashboard
+                </button>
+              )}
               <button
+                id="success-done-btn"
                 onClick={() => setBookedParcel(null)}
-                className="py-3 px-5 rounded-xl border border-zinc-300 text-zinc-700 font-semibold text-xs hover:bg-zinc-50 transition-colors"
+                className="py-3 px-4 rounded-xl border border-zinc-300 text-zinc-700 font-semibold text-xs hover:bg-zinc-50 transition-colors cursor-pointer"
               >
                 Done
               </button>

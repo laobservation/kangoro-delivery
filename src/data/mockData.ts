@@ -1,4 +1,37 @@
-import { TaxiDriver, ParcelDelivery, CityRoute, ChatMessage } from '../types';
+import { TaxiDriver, ParcelDelivery, CityRoute, ChatMessage, SenderUser } from '../types';
+
+export const DEFAULT_SENDER_USERS: SenderUser[] = [
+  {
+    id: 'user-1',
+    name: 'Amine Benjelloun',
+    phone: '+212 6 61 22 33 44',
+    email: 'amine.benjelloun@gmail.com',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    city: 'Casablanca',
+    accountType: 'individual',
+    joinedDate: 'Jan 2025'
+  },
+  {
+    id: 'user-2',
+    name: 'Nadia Chaoui',
+    phone: '+212 6 70 12 34 56',
+    email: 'nadia.artisan@moroccocraft.ma',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    city: 'Rabat',
+    accountType: 'e_commerce',
+    joinedDate: 'Nov 2024'
+  },
+  {
+    id: 'user-3',
+    name: 'Mounir Kadiri (Law Firm)',
+    phone: '+212 6 55 44 33 22',
+    email: 'contact@kadirilaw.ma',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    city: 'Casablanca',
+    accountType: 'business',
+    joinedDate: 'Feb 2025'
+  }
+];
 
 export const POPULAR_ROUTES: CityRoute[] = [
   {

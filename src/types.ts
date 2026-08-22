@@ -133,3 +133,14 @@ export interface CityRoute {
   stationsTo: string[];
   highwayName: string;
 }
+
+export interface SenderUser {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  avatar?: string;
+  city?: string;
+  accountType?: 'individual' | 'business' | 'e_commerce';
+  joinedDate?: string;
+}

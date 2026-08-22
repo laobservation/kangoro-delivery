@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { TaxiDriver, ParcelDelivery, ChatMessage, DeliveryStatus } from './types';
-import { INITIAL_DRIVERS, INITIAL_PARCELS, INITIAL_CHAT } from './data/mockData';
+import { TaxiDriver, ParcelDelivery, ChatMessage, DeliveryStatus, SenderUser } from './types';
+import { INITIAL_DRIVERS, INITIAL_PARCELS, INITIAL_CHAT, DEFAULT_SENDER_USERS } from './data/mockData';
 import { Navbar } from './components/Navbar';
+import { SenderDashboardView } from './components/SenderDashboardView';
 import { SenderView } from './components/SenderView';
 import { LiveTrackingView } from './components/LiveTrackingView';
 import { DriverTerminalView } from './components/DriverTerminalView';
@@ -16,12 +17,36 @@ import { ChatModal } from './components/ChatModal';
 const STORAGE_KEYS = {
   DRIVERS: 'ict_taxi_drivers_v1',
   PARCELS: 'ict_parcels_v1',
-  CHAT: 'ict_chat_v1'
+  CHAT: 'ict_chat_v1',
+  USERS: 'ict_sender_users_v1',
+  CURRENT_USER: 'ict_current_sender_v1'
 };
 
 export default function App() {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'send' | 'track' | 'driver' | 'stations'>('send');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'send' | 'track' | 'driver' | 'stations'>('dashboard');
+  const [prefillParcelData, setPrefillParcelData] = useState<Partial<ParcelDelivery> | null>(null);
+
+  // Sender User Authentication State
+  const [senderUsers, setSenderUsers] = useState<SenderUser[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+      return saved ? JSON.parse(saved) : DEFAULT_SENDER_USERS;
+    } catch {
+      return DEFAULT_SENDER_USERS;
+    }
+  });
+
+  const [currentSenderUser, setCurrentSenderUser] = useState<SenderUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (saved) return JSON.parse(saved);
+      // By default start disconnected so the user sees the connection gateway to access dashboard
+      return null;
+    } catch {
+      return null;
+    }
+  });
 
   // Persistence / States
   const [drivers, setDrivers] = useState<TaxiDriver[]>(() => {
@@ -55,6 +80,27 @@ export default function App() {
   const [selectedTrackingCode, setSelectedTrackingCode] = useState<string>(INITIAL_PARCELS[0].trackingCode);
   const [activeChatDelivery, setActiveChatDelivery] = useState<ParcelDelivery | null>(null);
 
+  // Sync users to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(senderUsers));
+    } catch (e) {
+      console.warn('Storage sync failed', e);
+    }
+  }, [senderUsers]);
+
+  useEffect(() => {
+    try {
+      if (currentSenderUser) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentSenderUser));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      }
+    } catch (e) {
+      console.warn('Storage sync failed', e);
+    }
+  }, [currentSenderUser]);
+
   // Sync to local storage
   useEffect(() => {
     try {
@@ -79,6 +125,20 @@ export default function App() {
       console.warn('Storage sync failed', e);
     }
   }, [chatMessages]);
+
+  // Sender Auth Handlers
+  const handleLoginSender = (user: SenderUser) => {
+    setCurrentSenderUser(user);
+  };
+
+  const handleLogoutSender = () => {
+    setCurrentSenderUser(null);
+  };
+
+  const handleRegisterSender = (newUser: SenderUser) => {
+    setSenderUsers(prev => [newUser, ...prev]);
+    setCurrentSenderUser(newUser);
+  };
 
   // Book a new parcel
   const handleBookParcel = (newParcel: ParcelDelivery) => {
@@ -381,20 +441,48 @@ export default function App() {
         setActiveTab={setActiveTab}
         activeDeliveriesCount={activeDeliveriesCount}
         onResetData={handleResetData}
+        currentUser={currentSenderUser}
+        onLogoutSender={handleLogoutSender}
       />
 
       {/* Main View Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        {activeTab === 'dashboard' && (
+          <SenderDashboardView
+            currentUser={currentSenderUser}
+            onLogin={handleLoginSender}
+            onLogout={handleLogoutSender}
+            onRegister={handleRegisterSender}
+            availableUsers={senderUsers}
+            deliveries={deliveries}
+            onNavigateToSend={(prefill) => {
+              setPrefillParcelData(prefill || null);
+              setActiveTab('send');
+            }}
+            onNavigateToTrack={(code) => {
+              setSelectedTrackingCode(code);
+              setActiveTab('track');
+            }}
+            onOpenChat={(d) => setActiveChatDelivery(d)}
+          />
+        )}
+
         {activeTab === 'send' && (
           <SenderView
             drivers={drivers}
+            initialPrefillData={prefillParcelData}
+            currentUser={currentSenderUser}
             onBookParcel={(newParcel) => {
               handleBookParcel(newParcel);
               setSelectedTrackingCode(newParcel.trackingCode);
+              setPrefillParcelData(null);
             }}
             onSelectDeliveryForTracking={(code) => {
               setSelectedTrackingCode(code);
               setActiveTab('track');
+            }}
+            onNavigateToDashboard={() => {
+              setActiveTab('dashboard');
             }}
           />
         )}
