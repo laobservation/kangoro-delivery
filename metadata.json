@@ -1,0 +1,6 @@
+{
+  "name": "Intercity Taxi Parcel Delivery",
+  "description": "Connect with intercity taxi drivers to send and deliver parcels rapidly between cities with driver matching, live tracking, and secure handover codes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
