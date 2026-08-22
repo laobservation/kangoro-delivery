@@ -113,8 +113,13 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
         {/* Header */}
         <div className="p-5 bg-linear-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white flex items-center justify-between border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-black shadow-inner shadow-amber-300">
-              <Truck className="w-5 h-5 stroke-[2.4]" />
+            <div className="p-1 rounded-xl bg-white flex items-center justify-center shadow-xs">
+              <img
+                src="/logo.png"
+                alt="KANGORO DELIVERY"
+                referrerPolicy="no-referrer"
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <div>
               <h3 className="font-extrabold text-base text-zinc-100 flex items-center gap-2">

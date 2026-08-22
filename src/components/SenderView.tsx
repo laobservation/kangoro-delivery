@@ -318,9 +318,9 @@ export const SenderView: React.FC<SenderViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Route Corridor Buttons */}
-          <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
-            <span className="text-xs font-bold text-zinc-700">{t.quickCorridors}</span>
+          {/* Quick Route Corridor Buttons - Airbnb Pill Style */}
+          <div className="flex items-center sm:justify-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 -mx-2 sm:mx-0 flex-nowrap sm:flex-wrap pt-2">
+            <span className="text-xs font-bold text-zinc-600 shrink-0">{t.quickCorridors}</span>
             {POPULAR_ROUTES.map((route, idx) => {
               const isActive = originCity === route.from && destinationCity === route.to;
               return (
@@ -330,13 +330,14 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     setOriginCity(route.from);
                     setDestinationCity(route.to);
                   }}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                  className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 transition-all duration-200 cursor-pointer min-h-[36px] flex items-center gap-1.5 ${
                     isActive 
-                      ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs' 
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50'
+                      ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]' 
+                      : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
                   }`}
                 >
-                  {route.from} ➔ {route.to}
+                  <span className="text-xs">🛣️</span>
+                  <span>{route.from} ➔ {route.to}</span>
                 </button>
               );
             })}
@@ -468,37 +469,40 @@ export const SenderView: React.FC<SenderViewProps> = ({
               />
             </div>
 
-            {/* Quick Filters */}
-            <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
+            {/* Quick Filters - Airbnb Pill Style */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
               <button
                 onClick={() => setSelectedCategoryFilter('all')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer min-h-[34px] ${
                   selectedCategoryFilter === 'all'
-                    ? 'bg-zinc-950 text-white shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950'
+                    ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
                 }`}
               >
-                {t.allTaxisFilter}
+                <span>🌐</span>
+                <span>{t.allTaxisFilter}</span>
               </button>
               <button
                 onClick={() => setSelectedCategoryFilter('plenty')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer min-h-[34px] ${
                   selectedCategoryFilter === 'plenty'
-                    ? 'bg-zinc-950 text-white shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950'
+                    ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
                 }`}
               >
-                {t.spaciousTrunkFilter}
+                <span>📦</span>
+                <span>{t.spaciousTrunkFilter}</span>
               </button>
               <button
                 onClick={() => setSelectedCategoryFilter('doorstep')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer min-h-[34px] ${
                   selectedCategoryFilter === 'doorstep'
-                    ? 'bg-zinc-950 text-white shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950'
+                    ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
                 }`}
               >
-                {t.doorstepFilter}
+                <span>🚪</span>
+                <span>{t.doorstepFilter}</span>
               </button>
             </div>
           </div>
@@ -651,35 +655,35 @@ export const SenderView: React.FC<SenderViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-zinc-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="p-5 bg-linear-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="p-4 sm:p-5 bg-linear-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 <img
                   src={selectedDriver.avatar}
                   alt={selectedDriver.name}
-                  className="w-11 h-11 rounded-full border-2 border-amber-400 object-cover"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-amber-400 object-cover"
                 />
                 <div>
-                  <h3 className="font-extrabold text-base text-zinc-100 flex items-center gap-2">
-                    <span>Dispatch Parcel with {selectedDriver.name}</span>
+                  <h3 className="font-extrabold text-sm sm:text-base text-zinc-100 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span>Dispatch with {selectedDriver.name}</span>
                     <span className="text-[10px] bg-amber-400 text-zinc-950 px-1.5 py-0.5 rounded font-mono font-bold">
                       {selectedDriver.vehiclePlate}
                     </span>
                   </h3>
-                  <p className="text-xs text-zinc-300">
+                  <p className="text-[11px] sm:text-xs text-zinc-300">
                     {originCity} ➔ {destinationCity} • Departure {selectedDriver.departureTime}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedDriver(null)}
-                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {/* Booking Form */}
-            <form onSubmit={handleConfirmBooking} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleConfirmBooking} className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-h-[75vh] overflow-y-auto">
               {/* Step 1: Parcel Type & Weight */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">

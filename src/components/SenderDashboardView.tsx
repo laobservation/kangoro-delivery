@@ -981,61 +981,69 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          {/* Filter Pills - Airbnb Pill Style */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 cursor-pointer min-h-[34px] ${
                 statusFilter === 'all'
-                  ? 'bg-zinc-900 text-white shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? 'bg-zinc-100 text-zinc-950 border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
               }`}
             >
-              All Orders ({senderDeliveries.length})
+              <span>📋</span>
+              <span>All Orders ({senderDeliveries.length})</span>
             </button>
 
             <button
               onClick={() => setStatusFilter('active')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 cursor-pointer min-h-[34px] ${
                 statusFilter === 'active'
-                  ? 'bg-amber-500 text-zinc-950 shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? 'bg-amber-100 text-amber-950 border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
               }`}
             >
-              Active In-Transit ({stats.activeCount})
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span>In-Transit ({stats.activeCount})</span>
             </button>
 
             <button
               onClick={() => setStatusFilter('delivered')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 cursor-pointer min-h-[34px] ${
                 statusFilter === 'delivered'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
               }`}
             >
-              Delivered ({stats.completedCount})
+              <span>✅</span>
+              <span>Delivered ({stats.completedCount})</span>
             </button>
 
             <button
               onClick={() => setStatusFilter('awaiting_pickup')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 cursor-pointer min-h-[34px] ${
                 statusFilter === 'awaiting_pickup'
-                  ? 'bg-zinc-900 text-white shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? 'bg-zinc-100 text-zinc-950 border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
               }`}
             >
-              Awaiting Handover
+              <span>⏳</span>
+              <span>Awaiting Handover</span>
             </button>
 
             <button
               onClick={() => setStatusFilter('cod')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all duration-200 cursor-pointer min-h-[34px] ${
                 statusFilter === 'cod'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? 'bg-blue-100 text-blue-950 border border-blue-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
               }`}
             >
-              Cash on Delivery (COD)
+              <span>💵</span>
+              <span>Cash on Delivery</span>
             </button>
           </div>
         </div>

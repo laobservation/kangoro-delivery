@@ -133,9 +133,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <X className="w-4 h-4" />
           </button>
 
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold uppercase tracking-wider mb-2">
-            <Lock className="w-3 h-3" />
-            <span>Sender Authentication</span>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-1 rounded-xl bg-white flex items-center justify-center shadow-xs">
+              <img
+                src="/logo.png"
+                alt="KANGORO DELIVERY"
+                referrerPolicy="no-referrer"
+                className="w-10 h-10 object-contain"
+              />
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold uppercase tracking-wider">
+              <Lock className="w-3 h-3" />
+              <span>Sender Authentication</span>
+            </div>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">

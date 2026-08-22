@@ -15,6 +15,7 @@ import { StationsDirectoryView } from './components/StationsDirectoryView';
 import { ChatModal } from './components/ChatModal';
 import { AuthModal } from './components/AuthModal';
 import { DriverRegisterModal } from './components/DriverRegisterModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Language } from './utils/i18n';
 
 const STORAGE_KEYS = {
@@ -512,7 +513,7 @@ export default function App() {
       />
 
       {/* Main View Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-12">
         {activeTab === 'send' && (
           <SenderView
             drivers={drivers}
@@ -620,12 +621,30 @@ export default function App() {
       )}
 
       {/* Clean Footer */}
-      <footer className="bg-white border-t border-zinc-200 py-6 text-xs text-zinc-500 text-center">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>KANGORO DELIVERY • Rapid City-to-City Parcel Delivery Network</span>
-          <span className="text-zinc-600">Dual OTP Security • Verified Grand Taxi Hubs • Live Expressway Tracking</span>
+      <footer className="bg-white border-t border-zinc-200 py-6 mb-20 md:mb-0 text-xs text-zinc-500 text-center">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <img
+              src="/logo.png"
+              alt="KANGORO DELIVERY"
+              referrerPolicy="no-referrer"
+              className="h-8 w-auto object-contain"
+            />
+            <span className="font-semibold text-zinc-700">Rapid City-to-City Parcel Delivery Network</span>
+          </div>
+          <span className="text-zinc-500">Dual OTP Security • Verified Grand Taxi Hubs • Live Expressway Tracking</span>
         </div>
       </footer>
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeDeliveriesCount={activeDeliveriesCount}
+        currentUser={currentSenderUser}
+        onRequireAuth={handleRequireAuth}
+        language={language}
+      />
     </div>
   );
 }
