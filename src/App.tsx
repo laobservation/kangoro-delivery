@@ -438,7 +438,7 @@ export default function App() {
       {/* Clean Footer */}
       <footer className="bg-white border-t border-zinc-200 py-6 text-xs text-zinc-500 text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Intercity Taxi Relay • Rapid City-to-City Parcel Delivery Network</span>
+          <span>KANGORO DELIVERY • Rapid City-to-City Parcel Delivery Network</span>
           <span className="text-zinc-600">Dual OTP Security • Verified Grand Taxi Hubs • Live Expressway Tracking</span>
         </div>
       </footer>

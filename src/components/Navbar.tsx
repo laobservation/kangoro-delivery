@@ -29,9 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg text-zinc-900 tracking-tight">InterCity</span>
+                <span className="font-extrabold text-lg text-zinc-900 tracking-tight">KANGORO</span>
                 <span className="text-xs uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                  Taxi Relay
+                  DELIVERY
                 </span>
               </div>
               <p className="text-xs text-zinc-700 hidden sm:block">Fast City-to-City Parcel Delivery by Taxi</p>
