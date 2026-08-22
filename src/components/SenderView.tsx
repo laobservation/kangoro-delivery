@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Package, 
   MapPin, 
@@ -14,7 +14,12 @@ import {
   Luggage, 
   Star, 
   Info,
-  ChevronRight
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  Send,
+  Lock,
+  Plus
 } from 'lucide-react';
 import { TaxiDriver, ParcelSize, PaymentMethod, ParcelDelivery, SenderUser } from '../types';
 import { POPULAR_ROUTES } from '../data/mockData';
@@ -25,6 +30,7 @@ import {
   generateOtp,
   getRouteDetails
 } from '../utils/helpers';
+import { Language, translations } from '../utils/i18n';
 
 interface SenderViewProps {
   drivers: TaxiDriver[];
@@ -33,6 +39,8 @@ interface SenderViewProps {
   onNavigateToDashboard?: () => void;
   initialPrefillData?: Partial<ParcelDelivery> | null;
   currentUser?: SenderUser | null;
+  onRequireAuth: (afterAuthCallback?: () => void) => void;
+  language?: Language;
 }
 
 export const SenderView: React.FC<SenderViewProps> = ({
@@ -41,12 +49,18 @@ export const SenderView: React.FC<SenderViewProps> = ({
   onSelectDeliveryForTracking,
   onNavigateToDashboard,
   initialPrefillData,
-  currentUser
+  currentUser,
+  onRequireAuth,
+  language = 'en'
 }) => {
+  const t = translations[language];
+  const isRtl = language === 'ar';
+
   // Route selection states
   const [originCity, setOriginCity] = useState<string>(initialPrefillData?.originCity || 'Casablanca');
   const [destinationCity, setDestinationCity] = useState<string>(initialPrefillData?.destinationCity || 'Rabat');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | 'plenty' | 'doorstep'>('all');
+  const [driverSearchQuery, setDriverSearchQuery] = useState('');
 
   // Selected driver for booking modal
   const [selectedDriver, setSelectedDriver] = useState<TaxiDriver | null>(null);
@@ -57,7 +71,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
   const [parcelDescription, setParcelDescription] = useState(initialPrefillData?.description || '');
   const [weightKg, setWeightKg] = useState<number>(initialPrefillData?.weightKg || 2.0);
   const [isFragile, setIsFragile] = useState(initialPrefillData?.isFragile || false);
-  const [declaredValue, setDeclaredValue] = useState<number>(initialPrefillData?.declaredValue || 50);
+  const [declaredValue, setDeclaredValue] = useState<number>(initialPrefillData?.declaredValue || 100);
 
   // Sender details
   const [senderName, setSenderName] = useState(
@@ -83,6 +97,17 @@ export const SenderView: React.FC<SenderViewProps> = ({
   // Success screen state
   const [bookedParcel, setBookedParcel] = useState<ParcelDelivery | null>(null);
 
+  // Ref to driver section for smooth scrolling
+  const driversSectionRef = useRef<HTMLDivElement>(null);
+
+  // Update sender info if currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      setSenderName(currentUser.name);
+      setSenderPhone(currentUser.phone);
+    }
+  }, [currentUser]);
+
   // Calculate route details and available drivers
   const routeInfo = getRouteDetails(originCity, destinationCity);
 
@@ -94,6 +119,16 @@ export const SenderView: React.FC<SenderViewProps> = ({
     if (!matchRoute) return false;
     if (selectedCategoryFilter === 'plenty' && d.availableTrunkSpace !== 'plenty') return false;
     if (selectedCategoryFilter === 'doorstep' && !d.acceptsDoorstep) return false;
+    
+    if (driverSearchQuery.trim()) {
+      const q = driverSearchQuery.toLowerCase();
+      const matchName = d.name.toLowerCase().includes(q);
+      const matchPlate = d.vehiclePlate.toLowerCase().includes(q);
+      const matchVehicle = d.vehicleModel.toLowerCase().includes(q);
+      const matchStation = d.originStation.toLowerCase().includes(q) || d.destinationStation.toLowerCase().includes(q);
+      if (!matchName && !matchPlate && !matchVehicle && !matchStation) return false;
+    }
+
     return true;
   });
 
@@ -107,11 +142,44 @@ export const SenderView: React.FC<SenderViewProps> = ({
     isFragile
   );
 
+  const handleStartSendingCTA = () => {
+    if (!currentUser) {
+      onRequireAuth(() => {
+        // After auth, scroll to drivers or open booking
+        if (availableDrivers.length > 0) {
+          handleOpenBooking(availableDrivers[0]);
+        } else {
+          driversSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    } else {
+      if (availableDrivers.length > 0) {
+        handleOpenBooking(availableDrivers[0]);
+      } else {
+        driversSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   const handleOpenBooking = (driver: TaxiDriver) => {
+    if (!currentUser) {
+      onRequireAuth(() => {
+        setSelectedDriver(driver);
+        setupDefaultParcelData(driver);
+      });
+      return;
+    }
+
     setSelectedDriver(driver);
-    // Pre-fill realistic titles
+    setupDefaultParcelData(driver);
+  };
+
+  const setupDefaultParcelData = (driver: TaxiDriver) => {
     if (!parcelTitle) {
       setParcelTitle('Document Envelope & Spare Parts');
+    }
+    if (!parcelDescription) {
+      setParcelDescription('Standard package delivered via intercity grand taxi.');
     }
     if (!receiverName) {
       setReceiverName('Yassine Fassi');
@@ -147,8 +215,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
       weightKg: Number(weightKg),
       isFragile,
       declaredValue: Number(declaredValue),
-      senderName: senderName.trim(),
-      senderPhone: senderPhone.trim(),
+      senderName: senderName.trim() || currentUser?.name || 'Sender',
+      senderPhone: senderPhone.trim() || currentUser?.phone || '+212 6 61 00 00 00',
       senderNotes: senderNotes.trim(),
       receiverName: receiverName.trim(),
       receiverPhone: receiverPhone.trim(),
@@ -186,45 +254,73 @@ export const SenderView: React.FC<SenderViewProps> = ({
   };
 
   const parcelCategoriesConfig = [
-    { id: 'envelope' as ParcelSize, label: 'Document / Envelope', desc: 'Letters, legal deeds, small pouch', maxKg: 0.5, icon: '📄' },
-    { id: 'small' as ParcelSize, label: 'Small Box (< 3 kg)', desc: 'Shoebox size, electronics, cosmetics', maxKg: 3, icon: '📦' },
-    { id: 'medium' as ParcelSize, label: 'Medium Box (3-10 kg)', desc: 'Carton box, mechanical parts, clothing', maxKg: 10, icon: '🧳' },
-    { id: 'large' as ParcelSize, label: 'Large Cargo (10-25 kg)', desc: 'Heavy bag, equipment, multiple boxes', maxKg: 25, icon: '🚚' },
+    { id: 'envelope' as ParcelSize, label: 'Document / Envelope', desc: 'Letters, contracts, small pouch', maxKg: 0.5, icon: '📄' },
+    { id: 'small' as ParcelSize, label: 'Small Box (< 3 kg)', desc: 'Shoebox size, electronics, gifts', maxKg: 3, icon: '📦' },
+    { id: 'medium' as ParcelSize, label: 'Medium Box (3-10 kg)', desc: 'Carton box, machinery parts, apparel', maxKg: 10, icon: '🧳' },
+    { id: 'large' as ParcelSize, label: 'Large Cargo (10-25 kg)', desc: 'Heavy parcel, equipment, sacks', maxKg: 25, icon: '🚚' },
     { id: 'fragile' as ParcelSize, label: 'Fragile / Special', desc: 'Glassware, ceramics, artwork', maxKg: 8, icon: '🍷' },
   ];
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Hero Intercity Route Selector */}
-      <section className="bg-linear-to-b from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/60 rounded-3xl p-6 sm:p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold uppercase tracking-wider">
-                <Car className="w-3.5 h-3.5" /> Intercity Grand Taxi Express Delivery
-              </div>
-              {onNavigateToDashboard && (
+    <div className={`space-y-8 pb-12 ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
+      {/* ========================================================================= */}
+      {/* HERO SECTION WITH CLEAR CALL TO ACTION TO START SENDING                   */}
+      {/* ========================================================================= */}
+      <section className="bg-linear-to-b from-amber-500/15 via-amber-500/5 to-white border border-amber-300/80 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden">
+        {/* Subtle decorative glow */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto space-y-6 relative z-10">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100/90 text-amber-900 border border-amber-300 text-xs font-extrabold uppercase tracking-wider shadow-xs">
+              <Car className="w-3.5 h-3.5 text-amber-700" />
+              <span>{t.heroBadge}</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black text-zinc-950 tracking-tight leading-tight">
+              {t.heroTitle1} <br className="hidden sm:block" />
+              <span className="text-amber-600">{t.heroTitleHighlight}</span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-zinc-700 max-w-2xl mx-auto font-medium">
+              {t.heroSubtitle}
+            </p>
+
+            {/* BIG PROMINENT CALL TO ACTION BUTTON */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                id="hero-start-sending-cta-btn"
+                onClick={handleStartSendingCTA}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-extrabold text-base shadow-xl hover:shadow-2xl transition-all cursor-pointer flex items-center justify-center gap-3 group border border-zinc-800"
+              >
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold">
+                  <Send className="w-4 h-4 text-zinc-950" />
+                </div>
+                <span>{t.heroSendNowBtn}</span>
+                <ArrowRight className={`w-5 h-5 text-amber-400 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1'} transition-transform`} />
+              </button>
+
+              {currentUser ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>{t.navConnectedAs} {currentUser.name}</span>
+                </div>
+              ) : (
                 <button
-                  id="hero-go-dashboard-btn"
-                  onClick={onNavigateToDashboard}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                  id="hero-create-account-btn"
+                  onClick={() => onRequireAuth()}
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white hover:bg-zinc-50 text-zinc-800 font-bold text-xs border border-zinc-300 shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <User className="w-3 h-3 text-amber-400" />
-                  <span>My Sender Dashboard</span>
+                  <User className="w-4 h-4 text-amber-500" />
+                  <span>{t.heroCreateAccountBtn}</span>
                 </button>
               )}
             </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
-              Send Parcels From City to City in Hours
-            </h1>
-            <p className="text-sm sm:text-base text-zinc-600 max-w-2xl mx-auto">
-              Select an intercity taxi driver heading to your destination. Hand over your parcel at the central taxi station, and the driver delivers it directly to your recipient.
-            </p>
           </div>
 
           {/* Quick Route Corridor Buttons */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-zinc-700">Popular Corridors:</span>
+          <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
+            <span className="text-xs font-bold text-zinc-700">{t.quickCorridors}</span>
             {POPULAR_ROUTES.map((route, idx) => {
               const isActive = originCity === route.from && destinationCity === route.to;
               return (
@@ -234,10 +330,10 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     setOriginCity(route.from);
                     setDestinationCity(route.to);
                   }}
-                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
                     isActive 
-                      ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs' 
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50'
+                      ? 'bg-zinc-950 text-white border-zinc-950 shadow-xs' 
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50'
                   }`}
                 >
                   {route.from} ➔ {route.to}
@@ -246,35 +342,35 @@ export const SenderView: React.FC<SenderViewProps> = ({
             })}
           </div>
 
-          {/* City Selection Card */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-zinc-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          {/* City Selection & Instant Price Estimator Card */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md border border-zinc-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             {/* Origin City */}
-            <div className="md:col-span-5 space-y-1">
+            <div className="md:col-span-4 space-y-1">
               <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-amber-500" /> Origin City (Sending From)
+                <MapPin className="w-3.5 h-3.5 text-amber-500" /> {t.originCityLabel}
               </label>
               <select
+                id="select-origin-city"
                 value={originCity}
                 onChange={(e) => setOriginCity(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all cursor-pointer"
+                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden transition-all cursor-pointer"
               >
                 <option value="Casablanca">Casablanca</option>
                 <option value="Rabat">Rabat</option>
                 <option value="Marrakech">Marrakech</option>
                 <option value="Tangier">Tangier</option>
-                <option value="Paris">Paris</option>
-                <option value="Lyon">Lyon</option>
-                <option value="Nairobi">Nairobi</option>
-                <option value="Mombasa">Mombasa</option>
-                <option value="New York">New York</option>
-                <option value="Philadelphia">Philadelphia</option>
+                <option value="Fes">Fes</option>
+                <option value="Agadir">Agadir</option>
+                <option value="Meknes">Meknes</option>
+                <option value="Oujda">Oujda</option>
               </select>
             </div>
 
             {/* Swap Button */}
-            <div className="md:col-span-2 flex justify-center py-1 md:py-0">
+            <div className="md:col-span-1 flex justify-center py-1 md:py-0">
               <button
                 type="button"
+                id="btn-swap-cities"
                 onClick={() => {
                   const temp = originCity;
                   setOriginCity(destinationCity);
@@ -288,113 +384,154 @@ export const SenderView: React.FC<SenderViewProps> = ({
             </div>
 
             {/* Destination City */}
-            <div className="md:col-span-5 space-y-1">
+            <div className="md:col-span-4 space-y-1">
               <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Destination City (Delivering To)
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {t.destinationCityLabel}
               </label>
               <select
+                id="select-destination-city"
                 value={destinationCity}
                 onChange={(e) => setDestinationCity(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all cursor-pointer"
+                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden transition-all cursor-pointer"
               >
                 <option value="Rabat">Rabat</option>
                 <option value="Casablanca">Casablanca</option>
                 <option value="Marrakech">Marrakech</option>
                 <option value="Tangier">Tangier</option>
-                <option value="Lyon">Lyon</option>
-                <option value="Paris">Paris</option>
-                <option value="Mombasa">Mombasa</option>
-                <option value="Nairobi">Nairobi</option>
-                <option value="Philadelphia">Philadelphia</option>
-                <option value="New York">New York</option>
+                <option value="Fes">Fes</option>
+                <option value="Agadir">Agadir</option>
+                <option value="Meknes">Meknes</option>
+                <option value="Oujda">Oujda</option>
               </select>
+            </div>
+
+            {/* Start on Route CTA Button */}
+            <div className="md:col-span-3">
+              <button
+                id="btn-start-route-dispatch"
+                onClick={handleStartSendingCTA}
+                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>{t.dispatchOnRouteBtn}</span>
+                <ChevronRight className={`w-4 h-4 stroke-[3] ${isRtl ? 'rotate-180' : ''}`} />
+              </button>
             </div>
           </div>
 
           {/* Route Stats Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-600 px-2">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-zinc-900">Corridor Highway:</span>
-              <span className="bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 font-mono text-zinc-800">
+              <span className="font-bold text-zinc-900">{t.expressCorridor}</span>
+              <span className="bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200 font-mono font-bold text-zinc-800">
                 {routeInfo.highwayName}
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <span>Distance: <strong>{routeInfo.distanceKm} km</strong></span>
-              <span>Avg Transit Time: <strong>~{Math.round(routeInfo.avgDurationMinutes / 60)} hrs {routeInfo.avgDurationMinutes % 60} mins</strong></span>
+              <span>{t.distance} <strong>{routeInfo.distanceKm} km</strong></span>
+              <span>{t.avgTransitTime} <strong>~{Math.round(routeInfo.avgDurationMinutes / 60)} hrs {routeInfo.avgDurationMinutes % 60} mins</strong></span>
+              <span className="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded">
+                {t.fromRate} {formatCurrency(priceBreakdown.base)}
+              </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Available Taxi Drivers List */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ========================================================================= */}
+      {/* AVAILABLE TAXI DRIVERS SECTION WITH SEARCH & FILTER CONTROLS              */}
+      {/* ========================================================================= */}
+      <section ref={driversSectionRef} className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-              <span>Available Intercity Taxis</span>
-              <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-bold">
-                {availableDrivers.length} Departing Soon
+            <h2 className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
+              <span>{t.taxisOnRoute} {originCity} ➔ {destinationCity}</span>
+              <span className="text-xs bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full font-extrabold border border-amber-300">
+                {availableDrivers.length} {t.departingSoon}
               </span>
             </h2>
-            <p className="text-xs text-zinc-600">
-              Verified drivers with designated parcel trunk compartments and real-time OTP security.
+            <p className="text-xs text-zinc-600 mt-0.5">
+              Choose a verified driver to reserve parcel trunk space and generate OTP handover keys.
             </p>
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <button
-              onClick={() => setSelectedCategoryFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                selectedCategoryFilter === 'all'
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            >
-              All Taxis
-            </button>
-            <button
-              onClick={() => setSelectedCategoryFilter('plenty')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                selectedCategoryFilter === 'plenty'
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            >
-              Spacious Trunk
-            </button>
-            <button
-              onClick={() => setSelectedCategoryFilter('doorstep')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                selectedCategoryFilter === 'doorstep'
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            >
-              Doorstep Delivery
-            </button>
+          {/* Search & Category Filter Controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className={`w-3.5 h-3.5 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
+              <input
+                type="text"
+                value={driverSearchQuery}
+                onChange={(e) => setDriverSearchQuery(e.target.value)}
+                placeholder={t.driverSearchPlaceholder}
+                className={`${isRtl ? 'pr-8 pl-3' : 'pl-8 pr-3'} py-1.5 bg-white border border-zinc-300 rounded-xl text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:outline-hidden`}
+              />
+            </div>
+
+            {/* Quick Filters */}
+            <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
+              <button
+                onClick={() => setSelectedCategoryFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedCategoryFilter === 'all'
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950'
+                }`}
+              >
+                {t.allTaxisFilter}
+              </button>
+              <button
+                onClick={() => setSelectedCategoryFilter('plenty')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedCategoryFilter === 'plenty'
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950'
+                }`}
+              >
+                {t.spaciousTrunkFilter}
+              </button>
+              <button
+                onClick={() => setSelectedCategoryFilter('doorstep')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedCategoryFilter === 'doorstep'
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950'
+                }`}
+              >
+                {t.doorstepFilter}
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Empty State */}
         {availableDrivers.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 border border-zinc-200 text-center space-y-3">
-            <Car className="w-12 h-12 text-zinc-400 mx-auto" />
-            <h3 className="font-bold text-zinc-800">No scheduled taxis found for this exact route right now</h3>
-            <p className="text-xs text-zinc-600 max-w-md mx-auto">
-              You can switch routes above or switch to the <strong>Driver Terminal</strong> to publish a new trip on this route.
-            </p>
-            <button
-              onClick={() => {
-                setOriginCity('Casablanca');
-                setDestinationCity('Rabat');
-              }}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs"
-            >
-              View Casablanca ➔ Rabat Taxis
-            </button>
+          <div className="bg-white rounded-3xl p-8 border border-zinc-200 text-center space-y-4 shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+              <Car className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-zinc-900 text-base">No matching taxis for this corridor right now</h3>
+              <p className="text-xs text-zinc-600 max-w-md mx-auto">
+                Try clearing your search query or switch corridors to Casablanca ➔ Rabat or Marrakech ➔ Casablanca.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => {
+                  setOriginCity('Casablanca');
+                  setDestinationCity('Rabat');
+                  setDriverSearchQuery('');
+                  setSelectedCategoryFilter('all');
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs cursor-pointer"
+              >
+                View Casablanca ➔ Rabat Taxis
+              </button>
+            </div>
           </div>
         ) : (
+          /* Driver Cards Grid */
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {availableDrivers.map((driver) => {
               const remainingSlots = driver.maxParcels - driver.currentParcelsCount;
@@ -436,10 +573,10 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     {/* Schedule & Stations */}
                     <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200/80 space-y-2 text-xs mb-3">
                       <div className="flex items-center justify-between text-zinc-700">
-                        <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                          <Clock className="w-3.5 h-3.5" /> {driver.departureTime}
+                        <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                          <Clock className="w-3.5 h-3.5" /> Departure: {driver.departureTime}
                         </span>
-                        <span className="text-zinc-600">
+                        <span className="text-zinc-600 font-medium">
                           Est. Arrival: <strong>{driver.estimatedArrival}</strong>
                         </span>
                       </div>
@@ -456,19 +593,20 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Driver Notes & Trunk Capacity */}
-                    <div className="flex items-center justify-between text-xs mb-4">
-                      <div className="flex items-center gap-1.5">
-                        <Luggage className="w-3.5 h-3.5 text-zinc-600" />
-                        <span className="text-zinc-600">Trunk Space:</span>
-                        <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
-                          driver.availableTrunkSpace === 'plenty'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : driver.availableTrunkSpace === 'medium'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-amber-100 text-amber-800'
+                    {/* Features Badges */}
+                    <div className="flex items-center gap-2 flex-wrap mb-4">
+                      <div className="flex items-center gap-1 text-[11px] text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 font-medium">
+                        <Luggage className="w-3 h-3 text-zinc-600" />
+                        <span>Trunk: <strong className="capitalize">{driver.availableTrunkSpace}</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[11px] font-medium">
+                        <span className={`px-2 py-0.5 rounded border ${
+                          remainingSlots > 0 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
-                          {remainingSlots} parcel slots left
+                          {remainingSlots} slots left
                         </span>
                       </div>
 
@@ -483,11 +621,11 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   {/* Bottom: Pricing & Select Button */}
                   <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-[11px] text-zinc-700 block">Standard Parcel From</span>
-                      <span className="text-lg font-black text-zinc-900">
+                      <span className="text-[11px] text-zinc-600 block">Base Taxi Rate</span>
+                      <span className="text-lg font-black text-zinc-950">
                         {formatCurrency(driver.flatBaseRate)}
                       </span>
-                      <span className="text-[10px] text-zinc-700"> / docs & small box</span>
+                      <span className="text-[10px] text-zinc-500"> / docs & small box</span>
                     </div>
 
                     <button
@@ -496,7 +634,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer group-hover:shadow-md"
                     >
                       <span>Send Parcel with Taxi</span>
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
@@ -506,30 +644,35 @@ export const SenderView: React.FC<SenderViewProps> = ({
         )}
       </section>
 
-      {/* Parcel Dispatch Wizard Modal */}
+      {/* ========================================================================= */}
+      {/* DETAILED PARCEL CONFIGURATION & DISPATCH WIZARD MODAL                     */}
+      {/* ========================================================================= */}
       {selectedDriver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-zinc-200 overflow-hidden my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-zinc-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="p-5 bg-zinc-900 text-white flex items-center justify-between">
+            <div className="p-5 bg-linear-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
                   src={selectedDriver.avatar}
                   alt={selectedDriver.name}
-                  className="w-10 h-10 rounded-full border-2 border-amber-400 object-cover"
+                  className="w-11 h-11 rounded-full border-2 border-amber-400 object-cover"
                 />
                 <div>
-                  <h3 className="font-bold text-base text-zinc-100">
-                    Book Parcel Dispatch with {selectedDriver.name}
+                  <h3 className="font-extrabold text-base text-zinc-100 flex items-center gap-2">
+                    <span>Dispatch Parcel with {selectedDriver.name}</span>
+                    <span className="text-[10px] bg-amber-400 text-zinc-950 px-1.5 py-0.5 rounded font-mono font-bold">
+                      {selectedDriver.vehiclePlate}
+                    </span>
                   </h3>
-                  <p className="text-xs text-zinc-400">
-                    {originCity} ➔ {destinationCity} • {selectedDriver.departureTime}
+                  <p className="text-xs text-zinc-300">
+                    {originCity} ➔ {destinationCity} • Departure {selectedDriver.departureTime}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedDriver(null)}
-                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -548,155 +691,130 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       key={cat.id}
                       type="button"
                       onClick={() => setParcelCategory(cat.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                         parcelCategory === cat.id
-                          ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
-                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/40'
+                          ? 'border-amber-500 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
                       }`}
                     >
-                      <span className="text-2xl">{cat.icon}</span>
-                      <div className="flex-1">
-                        <div className="font-bold text-xs text-zinc-900">{cat.label}</div>
-                        <div className="text-[11px] text-zinc-700">{cat.desc}</div>
+                      <span className="text-xl">{cat.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-zinc-900 truncate">{cat.label}</span>
+                          <span className="text-[10px] font-semibold text-zinc-500">Max {cat.maxKg}kg</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-600 mt-0.5">{cat.desc}</p>
                       </div>
                     </button>
                   ))}
                 </div>
+              </div>
 
-                {/* Weight & Fragile Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {/* Step 2: Package Specs & Content Details */}
+              <div className="space-y-3 pt-4 border-t border-zinc-200">
+                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-4 h-4 text-amber-500" /> 2. Parcel Details & Weight
+                </h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">
-                      Estimated Weight (kg): {weightKg} kg
+                    <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
+                      Parcel Label / Title *
                     </label>
                     <input
-                      type="range"
-                      min="0.2"
-                      max="20"
-                      step="0.2"
-                      value={weightKg}
-                      onChange={(e) => setWeightKg(parseFloat(e.target.value))}
-                      className="w-full accent-amber-500 cursor-pointer"
+                      type="text"
+                      required
+                      placeholder="e.g. Legal Documents, Auto Filter, Samples"
+                      value={parcelTitle}
+                      onChange={(e) => setParcelTitle(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl">
-                    <div>
-                      <span className="text-xs font-bold text-zinc-900 block">Fragile Item?</span>
-                      <span className="text-[10px] text-zinc-700">Special front cabin / cushioned trunk placement</span>
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
+                      Weight in Kg ({weightKg} kg)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="0.2"
+                        max="25"
+                        step="0.5"
+                        value={weightKg}
+                        onChange={(e) => setWeightKg(parseFloat(e.target.value))}
+                        className="flex-1 accent-amber-500"
+                      />
+                      <span className="font-mono font-bold text-xs bg-zinc-100 px-2 py-1 rounded border border-zinc-300">
+                        {weightKg} kg
+                      </span>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={isFragile}
-                      onChange={(e) => setIsFragile(e.target.checked)}
-                      className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
-                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-zinc-700 mb-1">
-                    Parcel Title / Short Description
+                  <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
+                    Contents Description / Packaging Notes
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Legal documents & auto part sample"
-                    value={parcelTitle}
-                    onChange={(e) => setParcelTitle(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+                  <textarea
+                    rows={2}
+                    placeholder="Provide details for the taxi driver (e.g. sealed envelope, double taped cardboard box)"
+                    value={parcelDescription}
+                    onChange={(e) => setParcelDescription(e.target.value)}
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                   />
                 </div>
-              </div>
 
-              {/* Step 2: Pickup & Dropoff Stations */}
-              <div className="space-y-3 pt-4 border-t border-zinc-200">
-                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-amber-500" /> 2. Handover & Delivery Points
-                </h4>
+                {/* Fragile & Declared value */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label className="flex items-center gap-2 p-3 bg-zinc-50 rounded-xl border border-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isFragile}
+                      onChange={(e) => setIsFragile(e.target.checked)}
+                      className="rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-zinc-900 block">Fragile Item (+20 MAD)</span>
+                      <span className="text-[10px] text-zinc-500">Secured in cushioned front compartment</span>
+                    </div>
+                  </label>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Origin Meeting */}
-                  <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200 space-y-2">
-                    <span className="text-xs font-bold text-zinc-900 block">
-                      Origin Handover ({originCity})
-                    </span>
-                    <p className="text-xs text-zinc-700">
-                      Taxi Departure Station: <strong className="text-zinc-900">{selectedDriver.originStation}</strong>
-                    </p>
-
-                    <label className="flex items-center gap-2 pt-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isDoorstepPickup}
-                        onChange={(e) => setIsDoorstepPickup(e.target.checked)}
-                        className="w-4 h-4 accent-amber-500 rounded"
-                      />
-                      <span className="text-xs text-zinc-700">Request driver pickup from my doorstep (+ $6.00)</span>
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
+                      Declared Value (MAD)
                     </label>
-
-                    {isDoorstepPickup && (
-                      <input
-                        type="text"
-                        placeholder="Your exact pickup street address..."
-                        value={pickupAddress}
-                        onChange={(e) => setPickupAddress(e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-amber-500"
-                        required
-                      />
-                    )}
-                  </div>
-
-                  {/* Destination Dropoff */}
-                  <div className="bg-zinc-50 p-3.5 rounded-xl border border-zinc-200 space-y-2">
-                    <span className="text-xs font-bold text-zinc-900 block">
-                      Destination Delivery ({destinationCity})
-                    </span>
-                    <p className="text-xs text-zinc-700">
-                      Taxi Arrival Station: <strong className="text-zinc-900">{selectedDriver.destinationStation}</strong>
-                    </p>
-
-                    <label className="flex items-center gap-2 pt-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isDoorstepDropoff}
-                        onChange={(e) => setIsDoorstepDropoff(e.target.checked)}
-                        className="w-4 h-4 accent-amber-500 rounded"
-                      />
-                      <span className="text-xs text-zinc-700">Direct Doorstep Delivery to Receiver (+ $6.00)</span>
-                    </label>
-
-                    {isDoorstepDropoff && (
-                      <input
-                        type="text"
-                        placeholder="Receiver's exact address in destination city..."
-                        value={receiverAddress}
-                        onChange={(e) => setReceiverAddress(e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-amber-500"
-                        required
-                      />
-                    )}
+                    <input
+                      type="number"
+                      min="10"
+                      max="10000"
+                      value={declaredValue}
+                      onChange={(e) => setDeclaredValue(Number(e.target.value))}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Step 3: Recipient & Sender Contact Info */}
+              {/* Step 3: Sender & Recipient Contacts */}
               <div className="space-y-3 pt-4 border-t border-zinc-200">
                 <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-amber-500" /> 3. Sender & Recipient Contacts
+                  <User className="w-4 h-4 text-amber-500" /> 3. Sender & Recipient Contact Information
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Sender Contact */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-semibold text-zinc-700">Sender Details</span>
+                  <div className="space-y-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                    <span className="text-xs font-bold text-zinc-900 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-amber-600" /> Sender (You)
+                    </span>
                     <input
                       type="text"
                       required
                       placeholder="Your Full Name"
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
                     />
                     <input
                       type="tel"
@@ -704,37 +822,88 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       placeholder="Your Phone (+212...)"
                       value={senderPhone}
                       onChange={(e) => setSenderPhone(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Meeting notes (e.g. Station Bay 3)"
+                      value={senderNotes}
+                      onChange={(e) => setSenderNotes(e.target.value)}
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
 
                   {/* Receiver Contact */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-semibold text-zinc-700">Recipient Details (Who will receive)</span>
+                  <div className="space-y-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
+                    <span className="text-xs font-bold text-zinc-900 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-emerald-600" /> Recipient (Receiver) *
+                    </span>
                     <input
                       type="text"
                       required
-                      placeholder="Receiver Full Name"
+                      placeholder="Recipient Full Name *"
                       value={receiverName}
                       onChange={(e) => setReceiverName(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
                     />
                     <input
                       type="tel"
                       required
-                      placeholder="Receiver Phone (+212...)"
+                      placeholder="Recipient Phone (+212...) *"
                       value={receiverPhone}
                       onChange={(e) => setReceiverPhone(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Destination meeting point or address"
+                      value={receiverAddress}
+                      onChange={(e) => setReceiverAddress(e.target.value)}
+                      className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Step 4: Payment Method */}
+              {/* Step 4: Doorstep Options */}
               <div className="space-y-2 pt-4 border-t border-zinc-200">
                 <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <DollarSign className="w-4 h-4 text-amber-500" /> 4. Payment Preference
+                  <MapPin className="w-4 h-4 text-amber-500" /> 4. Doorstep Collection & Delivery
+                </h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-start gap-2.5 p-3 bg-zinc-50 rounded-xl border border-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isDoorstepPickup}
+                      onChange={(e) => setIsDoorstepPickup(e.target.checked)}
+                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-zinc-900 block">Origin Doorstep Pickup (+25 MAD)</span>
+                      <span className="text-[10px] text-zinc-500">Driver picks up parcel at your doorstep in {originCity}</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 p-3 bg-zinc-50 rounded-xl border border-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isDoorstepDropoff}
+                      onChange={(e) => setIsDoorstepDropoff(e.target.checked)}
+                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-zinc-900 block">Destination Doorstep Dropoff (+25 MAD)</span>
+                      <span className="text-[10px] text-zinc-500">Driver delivers to recipient address in {destinationCity}</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Step 5: Payment Method */}
+              <div className="space-y-2 pt-4 border-t border-zinc-200">
+                <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="w-4 h-4 text-amber-500" /> 5. Payment Preference
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -747,7 +916,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     }`}
                   >
                     <div className="font-bold text-xs text-zinc-900">Cash on Pickup</div>
-                    <div className="text-[10px] text-zinc-700">Give cash to taxi driver at station</div>
+                    <div className="text-[10px] text-zinc-600">Pay taxi driver at station</div>
                   </button>
 
                   <button
@@ -760,7 +929,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     }`}
                   >
                     <div className="font-bold text-xs text-zinc-900">Cash on Delivery (COD)</div>
-                    <div className="text-[10px] text-zinc-700">Receiver pays driver on arrival</div>
+                    <div className="text-[10px] text-zinc-600">Receiver pays upon arrival</div>
                   </button>
 
                   <button
@@ -773,20 +942,20 @@ export const SenderView: React.FC<SenderViewProps> = ({
                     }`}
                   >
                     <div className="font-bold text-xs text-zinc-900">Digital Card / Escrow</div>
-                    <div className="text-[10px] text-zinc-700">Released upon recipient OTP code</div>
+                    <div className="text-[10px] text-zinc-600">Released via recipient OTP</div>
                   </button>
                 </div>
               </div>
 
               {/* Price Summary & Submit */}
-              <div className="bg-zinc-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-zinc-950 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-zinc-800">
                 <div className="space-y-1 text-center sm:text-left">
-                  <span className="text-xs text-zinc-400 block">Total Estimated Delivery Fee</span>
+                  <span className="text-xs text-zinc-400 block font-semibold">Total Delivery Fee</span>
                   <div className="text-2xl font-black text-amber-400">
                     {formatCurrency(priceBreakdown.total)}
                   </div>
-                  <span className="text-[11px] text-zinc-400">
-                    Includes highway toll, intercity trunk space & driver handover verification.
+                  <span className="text-[11px] text-zinc-400 block">
+                    Base ({formatCurrency(priceBreakdown.base)}) + Weight ({formatCurrency(priceBreakdown.weightFee)}) + Services ({formatCurrency(priceBreakdown.doorstepFee + priceBreakdown.fragileFee)})
                   </span>
                 </div>
 
@@ -794,15 +963,17 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedDriver(null)}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 font-semibold text-xs hover:bg-zinc-800 transition-colors"
+                    className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 font-semibold text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    id="submit-dispatch-booking-btn"
+                    className="flex-1 sm:flex-initial px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Check className="w-4 h-4" /> Confirm & Generate Waybill
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Confirm & Generate Dual-OTP</span>
                   </button>
                 </div>
               </div>
@@ -811,19 +982,21 @@ export const SenderView: React.FC<SenderViewProps> = ({
         </div>
       )}
 
-      {/* Success / Waybill Generated Modal */}
+      {/* ========================================================================= */}
+      {/* WAYBILL CONFIRMATION & DUAL-OTP SECURITY MODAL                            */}
+      {/* ========================================================================= */}
       {bookedParcel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-zinc-200 overflow-hidden text-center p-6 sm:p-8 space-y-5">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-zinc-200 overflow-hidden text-center p-6 sm:p-8 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <Check className="w-8 h-8 stroke-[3]" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs uppercase font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+              <span className="text-xs uppercase font-extrabold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
                 Parcel Booking Confirmed
               </span>
-              <h3 className="text-2xl font-extrabold text-zinc-900 mt-2">
+              <h3 className="text-2xl font-black text-zinc-900 mt-2 font-mono">
                 Waybill: {bookedParcel.trackingCode}
               </h3>
               <p className="text-xs text-zinc-600">
@@ -833,23 +1006,23 @@ export const SenderView: React.FC<SenderViewProps> = ({
 
             {/* Handover Security OTPs */}
             <div className="grid grid-cols-2 gap-3 text-left">
-              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 shadow-xs">
                 <span className="text-[11px] font-bold text-indigo-900 block">1. SENDER PICKUP OTP</span>
                 <div className="text-2xl font-mono font-black text-indigo-700 tracking-wider my-1">
                   {bookedParcel.pickupOtp}
                 </div>
                 <p className="text-[10px] text-indigo-900">
-                  Give this 4-digit code to the taxi driver when handing over your parcel at the station.
+                  Give this code to the taxi driver when handing over your parcel at the station.
                 </p>
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 shadow-xs">
                 <span className="text-[11px] font-bold text-emerald-900 block">2. RECEIVER DELIVERY OTP</span>
                 <div className="text-2xl font-mono font-black text-emerald-700 tracking-wider my-1">
                   {bookedParcel.deliveryOtp}
                 </div>
                 <p className="text-[10px] text-emerald-900">
-                  Send this code to {bookedParcel.receiverName}. Driver will request it upon handover.
+                  Send this code to {bookedParcel.receiverName}. Driver will ask for it at delivery.
                 </p>
               </div>
             </div>
@@ -863,26 +1036,15 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   setBookedParcel(null);
                   onSelectDeliveryForTracking(code);
                 }}
-                className="flex-1 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                className="flex-1 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                Track Live on Highway Map
+                <span>Track Live on Highway Radar</span>
+                <ArrowRight className="w-4 h-4 text-amber-400" />
               </button>
-              {onNavigateToDashboard && (
-                <button
-                  id="success-dashboard-btn"
-                  onClick={() => {
-                    setBookedParcel(null);
-                    onNavigateToDashboard();
-                  }}
-                  className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-xs transition-all cursor-pointer"
-                >
-                  Sender Dashboard
-                </button>
-              )}
               <button
                 id="success-done-btn"
                 onClick={() => setBookedParcel(null)}
-                className="py-3 px-4 rounded-xl border border-zinc-300 text-zinc-700 font-semibold text-xs hover:bg-zinc-50 transition-colors cursor-pointer"
+                className="py-3.5 px-5 rounded-xl border border-zinc-300 text-zinc-700 font-bold text-xs hover:bg-zinc-50 transition-colors cursor-pointer"
               >
                 Done
               </button>

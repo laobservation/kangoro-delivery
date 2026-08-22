@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TaxiDriver, ParcelDelivery, ChatMessage, DeliveryStatus, SenderUser } from './types';
 import { INITIAL_DRIVERS, INITIAL_PARCELS, INITIAL_CHAT, DEFAULT_SENDER_USERS } from './data/mockData';
 import { Navbar } from './components/Navbar';
@@ -13,19 +13,43 @@ import { LiveTrackingView } from './components/LiveTrackingView';
 import { DriverTerminalView } from './components/DriverTerminalView';
 import { StationsDirectoryView } from './components/StationsDirectoryView';
 import { ChatModal } from './components/ChatModal';
+import { AuthModal } from './components/AuthModal';
+import { DriverRegisterModal } from './components/DriverRegisterModal';
+import { Language } from './utils/i18n';
 
 const STORAGE_KEYS = {
   DRIVERS: 'ict_taxi_drivers_v1',
   PARCELS: 'ict_parcels_v1',
   CHAT: 'ict_chat_v1',
   USERS: 'ict_sender_users_v1',
-  CURRENT_USER: 'ict_current_sender_v1'
+  CURRENT_USER: 'ict_current_sender_v1',
+  LANGUAGE: 'ict_language_v1'
 };
 
 export default function App() {
-  // Navigation
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'send' | 'track' | 'driver' | 'stations'>('dashboard');
+  // Language Support (English, French, Arabic)
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      const savedLang = localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language;
+      if (savedLang && (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar')) {
+        return savedLang;
+      }
+      return 'en';
+    } catch {
+      return 'en';
+    }
+  });
+
+  // Navigation: Default strictly to 'send' (the Home / Send page)
+  const [activeTab, setActiveTab] = useState<'send' | 'dashboard' | 'track' | 'driver' | 'stations'>('send');
   const [prefillParcelData, setPrefillParcelData] = useState<Partial<ParcelDelivery> | null>(null);
+
+  // Authentication Modal State (for Senders)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const authSuccessCallbackRef = useRef<(() => void) | null>(null);
+
+  // Driver Registration Modal State
+  const [isDriverRegisterModalOpen, setIsDriverRegisterModalOpen] = useState(false);
 
   // Sender User Authentication State
   const [senderUsers, setSenderUsers] = useState<SenderUser[]>(() => {
@@ -41,7 +65,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       if (saved) return JSON.parse(saved);
-      // By default start disconnected so the user sees the connection gateway to access dashboard
+      // Start disconnected by default
       return null;
     } catch {
       return null;
@@ -79,6 +103,17 @@ export default function App() {
   const [activeDriverId, setActiveDriverId] = useState<string>(INITIAL_DRIVERS[0].id);
   const [selectedTrackingCode, setSelectedTrackingCode] = useState<string>(INITIAL_PARCELS[0].trackingCode);
   const [activeChatDelivery, setActiveChatDelivery] = useState<ParcelDelivery | null>(null);
+
+  // Sync Language & RTL direction to document
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.LANGUAGE, language);
+      document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = language;
+    } catch (e) {
+      console.warn('Language sync failed', e);
+    }
+  }, [language]);
 
   // Sync users to local storage
   useEffect(() => {
@@ -126,9 +161,24 @@ export default function App() {
     }
   }, [chatMessages]);
 
+  // Require Auth Trigger Helper
+  const handleRequireAuth = (afterAuthCallback?: () => void) => {
+    if (afterAuthCallback) {
+      authSuccessCallbackRef.current = afterAuthCallback;
+    } else {
+      authSuccessCallbackRef.current = null;
+    }
+    setIsAuthModalOpen(true);
+  };
+
   // Sender Auth Handlers
   const handleLoginSender = (user: SenderUser) => {
     setCurrentSenderUser(user);
+    if (authSuccessCallbackRef.current) {
+      const cb = authSuccessCallbackRef.current;
+      authSuccessCallbackRef.current = null;
+      setTimeout(() => cb(), 100);
+    }
   };
 
   const handleLogoutSender = () => {
@@ -138,6 +188,18 @@ export default function App() {
   const handleRegisterSender = (newUser: SenderUser) => {
     setSenderUsers(prev => [newUser, ...prev]);
     setCurrentSenderUser(newUser);
+    if (authSuccessCallbackRef.current) {
+      const cb = authSuccessCallbackRef.current;
+      authSuccessCallbackRef.current = null;
+      setTimeout(() => cb(), 100);
+    }
+  };
+
+  // Driver Registration Handler (connects new driver to fleet)
+  const handleRegisterDriver = (newDriver: TaxiDriver) => {
+    setDrivers(prev => [newDriver, ...prev]);
+    setActiveDriverId(newDriver.id);
+    setActiveTab('driver');
   };
 
   // Book a new parcel
@@ -166,7 +228,7 @@ export default function App() {
           id: `m-init-${Date.now()}`,
           deliveryId: newParcel.id,
           senderRole: 'system',
-          senderName: 'Dispatch System',
+          senderName: 'Kangoro Dispatch System',
           message: `Booking confirmed with driver ${newParcel.driver?.name}. Pickup OTP: ${newParcel.pickupOtp}`,
           timestamp: Date.now()
         },
@@ -408,7 +470,7 @@ export default function App() {
           deliveryId,
           senderRole: 'driver',
           senderName: activeChatDelivery.driver?.name || 'Driver Karim',
-          message: 'Received your message! I will keep you updated right as I cross the toll gate.',
+          message: 'Received your message! I will keep you updated right as I cross the highway toll gate.',
           timestamp: Date.now()
         };
         setChatMessages(prev => ({
@@ -443,35 +505,21 @@ export default function App() {
         onResetData={handleResetData}
         currentUser={currentSenderUser}
         onLogoutSender={handleLogoutSender}
+        onRequireAuth={handleRequireAuth}
+        language={language}
+        onSetLanguage={setLanguage}
+        onOpenDriverRegister={() => setIsDriverRegisterModalOpen(true)}
       />
 
       {/* Main View Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {activeTab === 'dashboard' && (
-          <SenderDashboardView
-            currentUser={currentSenderUser}
-            onLogin={handleLoginSender}
-            onLogout={handleLogoutSender}
-            onRegister={handleRegisterSender}
-            availableUsers={senderUsers}
-            deliveries={deliveries}
-            onNavigateToSend={(prefill) => {
-              setPrefillParcelData(prefill || null);
-              setActiveTab('send');
-            }}
-            onNavigateToTrack={(code) => {
-              setSelectedTrackingCode(code);
-              setActiveTab('track');
-            }}
-            onOpenChat={(d) => setActiveChatDelivery(d)}
-          />
-        )}
-
         {activeTab === 'send' && (
           <SenderView
             drivers={drivers}
             initialPrefillData={prefillParcelData}
             currentUser={currentSenderUser}
+            onRequireAuth={handleRequireAuth}
+            language={language}
             onBookParcel={(newParcel) => {
               handleBookParcel(newParcel);
               setSelectedTrackingCode(newParcel.trackingCode);
@@ -484,6 +532,27 @@ export default function App() {
             onNavigateToDashboard={() => {
               setActiveTab('dashboard');
             }}
+          />
+        )}
+
+        {activeTab === 'dashboard' && (
+          <SenderDashboardView
+            currentUser={currentSenderUser}
+            onLogin={handleLoginSender}
+            onLogout={handleLogoutSender}
+            onRegister={handleRegisterSender}
+            availableUsers={senderUsers}
+            deliveries={deliveries}
+            language={language}
+            onNavigateToSend={(prefill) => {
+              setPrefillParcelData(prefill || null);
+              setActiveTab('send');
+            }}
+            onNavigateToTrack={(code) => {
+              setSelectedTrackingCode(code);
+              setActiveTab('track');
+            }}
+            onOpenChat={(d) => setActiveChatDelivery(d)}
           />
         )}
 
@@ -507,11 +576,38 @@ export default function App() {
             onUpdateDriverStatus={handleUpdateDriverStatus}
             onVerifyHandover={handleVerifyHandover}
             onOpenChat={(d) => setActiveChatDelivery(d)}
+            language={language}
+            onOpenDriverRegister={() => setIsDriverRegisterModalOpen(true)}
+            onLogoutDriver={() => setActiveDriverId(INITIAL_DRIVERS[0].id)}
           />
         )}
 
         {activeTab === 'stations' && <StationsDirectoryView />}
       </main>
+
+      {/* Driver Registration Modal */}
+      <DriverRegisterModal
+        isOpen={isDriverRegisterModalOpen}
+        onClose={() => setIsDriverRegisterModalOpen(false)}
+        onRegisterDriver={handleRegisterDriver}
+        language={language}
+      />
+
+      {/* Auth Modal triggered across app for senders */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onRegister={handleRegisterSender}
+        onLogin={handleLoginSender}
+        availableUsers={senderUsers}
+        onSuccessCallback={() => {
+          if (authSuccessCallbackRef.current) {
+            const cb = authSuccessCallbackRef.current;
+            authSuccessCallbackRef.current = null;
+            cb();
+          }
+        }}
+      />
 
       {/* Direct Messaging Chat Modal */}
       {activeChatDelivery && (

@@ -1,6 +1,6 @@
 {
-  "name": "Intercity Taxi Parcel Delivery",
-  "description": "Connect with intercity taxi drivers to send and deliver parcels rapidly between cities with driver matching, live tracking, and secure handover codes.",
+  "name": "KANGORO DELIVERY - Intercity Taxi Parcel Delivery",
+  "description": "Morocco's intercity Grand Taxi express parcel dispatch network. Connect with city-to-city taxi drivers with dual-OTP handover security and live tracking.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

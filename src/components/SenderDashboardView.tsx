@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { ParcelDelivery, DeliveryStatus, PaymentMethod, TaxiDriver, SenderUser } from '../types';
 import { formatCurrency, formatDate, formatTime, getStatusBadgeInfo } from '../utils/helpers';
+import { Language, translations } from '../utils/i18n';
 
 interface SenderDashboardViewProps {
   currentUser: SenderUser | null;
@@ -51,6 +52,7 @@ interface SenderDashboardViewProps {
   onNavigateToSend: (prefillData?: Partial<ParcelDelivery>) => void;
   onNavigateToTrack: (trackingCode: string) => void;
   onOpenChat: (delivery: ParcelDelivery) => void;
+  language?: Language;
 }
 
 export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
@@ -62,8 +64,12 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
   deliveries,
   onNavigateToSend,
   onNavigateToTrack,
-  onOpenChat
+  onOpenChat,
+  language = 'en'
 }) => {
+  const t = translations[language];
+  const isRtl = language === 'ar';
+
   // Login Form States (when not connected)
   const [authTab, setAuthTab] = useState<'quick' | 'phone' | 'register'>('quick');
   

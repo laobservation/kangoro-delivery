@@ -15,11 +15,14 @@ import {
   KeyRound, 
   ArrowRight,
   TrendingUp,
-  Car
+  Car,
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 import { TaxiDriver, ParcelDelivery } from '../types';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { HandoverVerifyModal } from './HandoverVerifyModal';
+import { Language, translations } from '../utils/i18n';
 
 interface DriverTerminalViewProps {
   drivers: TaxiDriver[];
@@ -30,6 +33,9 @@ interface DriverTerminalViewProps {
   onUpdateDriverStatus: (driverId: string, status: TaxiDriver['status'], progressPct: number) => void;
   onVerifyHandover: (deliveryId: string, otp: string, proofPhoto?: string) => boolean;
   onOpenChat: (delivery: ParcelDelivery) => void;
+  language?: Language;
+  onOpenDriverRegister?: () => void;
+  onLogoutDriver?: () => void;
 }
 
 export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
@@ -40,8 +46,14 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   onPublishTrip,
   onUpdateDriverStatus,
   onVerifyHandover,
-  onOpenChat
+  onOpenChat,
+  language = 'en',
+  onOpenDriverRegister,
+  onLogoutDriver
 }) => {
+  const t = translations[language];
+  const isRtl = language === 'ar';
+
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [verifyingDelivery, setVerifyingDelivery] = useState<{ delivery: ParcelDelivery; type: 'pickup' | 'delivery' } | null>(null);
 
@@ -53,7 +65,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   const [newVehicleModel, setNewVehicleModel] = useState('Mercedes-Benz E-Class Grand Taxi');
   const [newVehiclePlate, setNewVehiclePlate] = useState('33-A-77889');
   const [newMaxParcels, setNewMaxParcels] = useState(5);
-  const [newBaseRate, setNewBaseRate] = useState(15);
+  const [newBaseRate, setNewBaseRate] = useState(18);
   const [newDepartureMins, setNewDepartureMins] = useState(30);
 
   const activeDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
@@ -94,7 +106,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className={`space-y-6 pb-12 ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Top Driver Bar & Profile Switcher */}
       <div className="bg-zinc-900 text-white rounded-3xl p-5 sm:p-6 border border-zinc-800 shadow-md">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -111,66 +123,93 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-zinc-100">{activeDriver.name}</h1>
                 <span className="text-xs bg-amber-500 text-zinc-950 font-bold px-2 py-0.5 rounded uppercase">
-                  Taxi Dispatcher Mode
+                  {t.driverDispatcherMode}
                 </span>
               </div>
               <p className="text-xs text-zinc-400">
-                {activeDriver.vehicleModel} • Plate: <strong className="text-zinc-200">{activeDriver.vehiclePlate}</strong>
+                {activeDriver.vehicleModel} • {t.taxiPlate}: <strong className="text-zinc-200">{activeDriver.vehiclePlate}</strong>
               </p>
             </div>
           </div>
 
-          {/* Switch Driver or Publish New Trip */}
+          {/* Switch Driver, Register Driver, or Publish New Trip */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             {/* Driver Select */}
             <select
+              id="driver-select-dropdown"
               value={activeDriverId}
               onChange={(e) => onSelectDriver(e.target.value)}
-              className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer"
             >
               {drivers.map((d) => (
                 <option key={d.id} value={d.id}>
-                  Driver: {d.name} ({d.originCity} ➔ {d.destinationCity})
+                  {d.name} ({d.originCity} ➔ {d.destinationCity})
                 </option>
               ))}
             </select>
 
+            {/* Register New Driver CTA */}
+            {onOpenDriverRegister && (
+              <button
+                id="driver-terminal-register-btn"
+                onClick={onOpenDriverRegister}
+                className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                title={t.navRegisterDriver}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>{t.navRegisterDriver}</span>
+              </button>
+            )}
+
+            {/* Publish Trip Button */}
             <button
               id="publish-trip-btn"
               onClick={() => setShowPublishModal(true)}
               className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>Publish New Intercity Trip</span>
+              <span>{t.driverPublishTripBtn}</span>
             </button>
+
+            {/* Optional Logout / Reset Active Driver */}
+            {onLogoutDriver && (
+              <button
+                id="driver-logout-btn"
+                onClick={onLogoutDriver}
+                className="p-2 rounded-xl bg-zinc-800 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors cursor-pointer"
+                title={t.driverLogoutBtn}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Driver Stats Overview */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-zinc-800/80">
           <div className="bg-zinc-800/60 rounded-xl p-3 border border-zinc-700/60">
-            <span className="text-[11px] text-zinc-400 block">Today's Parcel Earnings</span>
+            <span className="text-[11px] text-zinc-400 block">{t.driverTodayEarnings}</span>
             <div className="text-lg font-black text-amber-400 mt-0.5">
               {formatCurrency(totalDriverEarnings)}
             </div>
           </div>
 
           <div className="bg-zinc-800/60 rounded-xl p-3 border border-zinc-700/60">
-            <span className="text-[11px] text-zinc-400 block">Active Route</span>
+            <span className="text-[11px] text-zinc-400 block">{t.driverActiveRoute}</span>
             <div className="text-xs font-bold text-zinc-200 mt-1 truncate">
               {activeDriver.originCity} ➔ {activeDriver.destinationCity}
             </div>
           </div>
 
           <div className="bg-zinc-800/60 rounded-xl p-3 border border-zinc-700/60">
-            <span className="text-[11px] text-zinc-400 block">Trunk Load</span>
+            <span className="text-[11px] text-zinc-400 block">{t.driverTrunkLoad}</span>
             <div className="text-xs font-bold text-zinc-200 mt-1">
-              {driverParcels.filter(p => p.status !== 'delivered').length} / {activeDriver.maxParcels} Parcel slots
+              {driverParcels.filter(p => p.status !== 'delivered').length} / {activeDriver.maxParcels} {t.slotsLeft}
             </div>
           </div>
 
           <div className="bg-zinc-800/60 rounded-xl p-3 border border-zinc-700/60">
-            <span className="text-[11px] text-zinc-400 block">Trip Lifecycle</span>
+            <span className="text-[11px] text-zinc-400 block">{t.driverTripLifecycle}</span>
             <div className="text-xs font-bold text-emerald-400 mt-1 capitalize flex items-center gap-1">
               <Navigation className="w-3 h-3" /> {activeDriver.status.replace(/_/g, ' ')}
             </div>
@@ -184,7 +223,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
           <div>
             <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
               <Navigation className="w-4 h-4 text-amber-500" />
-              <span>Current Trip Highway Progression</span>
+              <span>{t.driverTripLifecycle} Controller</span>
             </h2>
             <p className="text-xs text-zinc-600">
               Update your taxi status to notify senders and receivers in real-time.
@@ -202,7 +241,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                 : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
             }`}
           >
-            <div className="font-bold text-xs text-zinc-900">1. Boarding at Station</div>
+            <div className="font-bold text-xs text-zinc-900">{t.driverStage1Boarding}</div>
             <div className="text-[10px] text-zinc-700">Verifying parcel handovers</div>
           </button>
 
@@ -214,185 +253,191 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                 : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
             }`}
           >
-            <div className="font-bold text-xs text-zinc-900">2. On Highway (In Transit)</div>
+            <div className="font-bold text-xs text-zinc-900">{t.driverStage2Highway}</div>
             <div className="text-[10px] text-zinc-700">Cruising intercity express line</div>
           </button>
 
           <button
-            onClick={() => onUpdateDriverStatus(activeDriver.id, 'arrived', 92)}
+            onClick={() => onUpdateDriverStatus(activeDriver.id, 'arrived', 90)}
             className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
               activeDriver.status === 'arrived'
-                ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-400/20'
+                ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-400/20'
                 : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
             }`}
           >
-            <div className="font-bold text-xs text-zinc-900">3. Arrived at Destination Hub</div>
-            <div className="text-[10px] text-zinc-700">Ready for recipient handover</div>
+            <div className="font-bold text-xs text-zinc-900">{t.driverStage3Arrived}</div>
+            <div className="text-[10px] text-zinc-700">Waiting for recipients at station</div>
           </button>
 
           <button
             onClick={() => onUpdateDriverStatus(activeDriver.id, 'completed', 100)}
             className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
               activeDriver.status === 'completed'
-                ? 'bg-zinc-900 text-white border-zinc-900'
+                ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-400/20'
                 : 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100'
             }`}
           >
-            <div className="font-bold text-xs">4. Trip Completed</div>
-            <div className="text-[10px] text-zinc-400">All packages handed over</div>
+            <div className="font-bold text-xs text-zinc-900">{t.driverStage4Completed}</div>
+            <div className="text-[10px] text-zinc-700">All parcels delivered safely</div>
           </button>
         </div>
       </div>
 
-      {/* Driver Trunk Manifest / Booked Parcels */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-zinc-900 flex items-center gap-2">
-            <Luggage className="w-5 h-5 text-amber-500" />
-            <span>Trunk Manifest ({driverParcels.length} Total Parcels)</span>
-          </h3>
-          <span className="text-xs text-zinc-600">
-            Verify 4-digit codes on pickup and dropoff to protect liability.
-          </span>
-        </div>
-
-        {driverParcels.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 border border-zinc-200 text-center space-y-2">
-            <Luggage className="w-10 h-10 text-zinc-400 mx-auto" />
-            <p className="text-sm font-semibold text-zinc-700">No parcel bookings for this taxi trip yet.</p>
-            <p className="text-xs text-zinc-700">Switch to the "Send Parcel" tab to book a package with {activeDriver.name}.</p>
+      {/* Driver Parcels List: Awaiting Pickup & Onboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Awaiting Pickup Handover (Need Sender OTP) */}
+        <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <h3 className="font-bold text-sm text-zinc-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span>Awaiting Pickup Handover ({pendingPickupParcels.length})</span>
+            </h3>
+            <span className="text-xs text-zinc-500 font-medium">Verify Sender 4-digit OTP</span>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {driverParcels.map((parcel) => {
-              const isDelivered = parcel.status === 'delivered';
-              const isOnboard = parcel.status === 'picked_up' || parcel.status === 'in_transit';
-              const isPendingPickup = parcel.status === 'accepted' || parcel.status === 'requested';
-              const isArrived = parcel.status === 'arrived_at_station';
 
-              return (
-                <div
-                  key={parcel.id}
-                  className={`bg-white rounded-2xl p-5 border transition-all ${
-                    isDelivered
-                      ? 'border-zinc-200 bg-zinc-50/50 opacity-80'
-                      : 'border-zinc-300 shadow-xs hover:border-amber-400'
-                  }`}
-                >
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    {/* Parcel Info */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-mono font-bold bg-zinc-100 text-zinc-800 px-2 py-0.5 rounded border border-zinc-200">
-                          {parcel.trackingCode}
-                        </span>
-                        <span className="font-bold text-zinc-900 text-sm">{parcel.title}</span>
-                        <span className="text-xs text-zinc-700 capitalize">
-                          ({parcel.category} • {parcel.weightKg} kg)
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-zinc-600 flex flex-wrap items-center gap-3 pt-1">
-                        <span>
-                          From: <strong>{parcel.senderName}</strong> ({parcel.senderPhone})
-                        </span>
-                        <span>➔</span>
-                        <span>
-                          To: <strong>{parcel.receiverName}</strong> ({parcel.receiverPhone})
-                        </span>
-                      </div>
-
-                      <div className="text-[11px] text-zinc-700 pt-0.5">
-                        Dropoff: <strong>{parcel.destinationStation}</strong>
-                        {parcel.isDoorstepDropoff && (
-                          <span className="text-emerald-700 ml-1 font-semibold">(Doorstep: {parcel.dropoffAddress})</span>
-                        )}
-                      </div>
+          {pendingPickupParcels.length === 0 ? (
+            <div className="text-center py-8 text-zinc-400 text-xs">
+              No pending pickups. Senders will appear here when booking this taxi.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingPickupParcels.map((parcel) => (
+                <div key={parcel.id} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold text-xs text-zinc-900">{parcel.title}</div>
+                      <div className="text-[11px] text-zinc-500 font-mono">Code: {parcel.trackingCode} • {parcel.weightKg} kg</div>
                     </div>
+                    <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                      {formatCurrency(parcel.priceTotal)}
+                    </span>
+                  </div>
 
-                    {/* Financials & Status Actions */}
-                    <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end pt-3 lg:pt-0 border-t lg:border-t-0 border-zinc-100">
-                      <div className="text-right">
-                        <span className="text-sm font-black text-zinc-900 block">
-                          {formatCurrency(parcel.priceTotal)}
-                        </span>
-                        <span className="text-[10px] text-zinc-700 capitalize block">
-                          {parcel.paymentMethod.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-
-                      {/* Chat */}
-                      <button
-                        onClick={() => onOpenChat(parcel)}
-                        className="p-2 rounded-xl border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
-                        title="Chat with sender/receiver"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-
-                      {/* Verification Buttons */}
-                      {isPendingPickup && (
-                        <button
-                          id={`verify-pickup-${parcel.id}`}
-                          onClick={() => setVerifyingDelivery({ delivery: parcel, type: 'pickup' })}
-                          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                          <span>Verify Pickup OTP</span>
-                        </button>
-                      )}
-
-                      {(isOnboard || isArrived) && (
-                        <button
-                          id={`verify-delivery-${parcel.id}`}
-                          onClick={() => setVerifyingDelivery({ delivery: parcel, type: 'delivery' })}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>Handover & Verify Recipient</span>
-                        </button>
-                      )}
-
-                      {isDelivered && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300">
-                          <Check className="w-3.5 h-3.5" /> Delivered & Signed
-                        </span>
-                      )}
+                  <div className="text-xs text-zinc-600 bg-white p-2.5 rounded-lg border border-zinc-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>Sender: <strong>{parcel.senderName}</strong></span>
+                      <a href={`tel:${parcel.senderPhone}`} className="text-amber-600 font-bold flex items-center gap-1">
+                        <Phone className="w-3 h-3" /> {parcel.senderPhone}
+                      </a>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-zinc-400" /> Station: {parcel.originStation}
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setVerifyingDelivery({ delivery: parcel, type: 'pickup' })}
+                      className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Verify Sender Pickup OTP</span>
+                    </button>
+                    <button
+                      onClick={() => onOpenChat(parcel)}
+                      className="p-2 rounded-xl border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+                      title="Direct Chat"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Onboard in Trunk & Arrived at Destination (Need Recipient OTP) */}
+        <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <h3 className="font-bold text-sm text-zinc-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>Loaded in Trunk & Destination Handover ({onboardParcels.length + arrivedParcels.length})</span>
+            </h3>
+            <span className="text-xs text-zinc-500 font-medium">Verify Recipient OTP</span>
           </div>
-        )}
+
+          {[...onboardParcels, ...arrivedParcels].length === 0 ? (
+            <div className="text-center py-8 text-zinc-400 text-xs">
+              No parcels currently loaded in trunk.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[...onboardParcels, ...arrivedParcels].map((parcel) => (
+                <div key={parcel.id} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold text-xs text-zinc-900">{parcel.title}</div>
+                      <div className="text-[11px] text-zinc-500 font-mono">
+                        Code: {parcel.trackingCode} • Status: <strong className="text-emerald-700">{parcel.status.replace(/_/g, ' ')}</strong>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                      {formatCurrency(parcel.priceTotal)}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-zinc-600 bg-white p-2.5 rounded-lg border border-zinc-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>Recipient: <strong>{parcel.receiverName}</strong></span>
+                      <a href={`tel:${parcel.receiverPhone}`} className="text-amber-600 font-bold flex items-center gap-1">
+                        <Phone className="w-3 h-3" /> {parcel.receiverPhone}
+                      </a>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-zinc-400" /> Dropoff: {parcel.destinationStation}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setVerifyingDelivery({ delivery: parcel, type: 'delivery' })}
+                      className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>{t.driverVerifyHandoverBtn}</span>
+                    </button>
+                    <button
+                      onClick={() => onOpenChat(parcel)}
+                      className="p-2 rounded-xl border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+                      title="Direct Chat"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Publish Trip Modal */}
       {showPublishModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-xs">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-zinc-200 overflow-hidden">
             <div className="p-5 bg-zinc-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Car className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-base">Publish Intercity Taxi Schedule</h3>
-              </div>
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-400" />
+                <span>{t.driverPublishTripBtn}</span>
+              </h3>
               <button
                 onClick={() => setShowPublishModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                className="p-1 text-zinc-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTrip} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleCreateTrip} className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">Departure City</label>
+                  <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">{t.originCityLabel}</label>
                   <select
                     value={newOrigin}
                     onChange={(e) => {
                       setNewOrigin(e.target.value);
-                      setNewOriginStation(`${e.target.value} Central Taxi Hub`);
+                      setNewOriginStation(`${e.target.value} Central Grand Taxi Station`);
                     }}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
                   >
@@ -400,15 +445,13 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                     <option value="Rabat">Rabat</option>
                     <option value="Marrakech">Marrakech</option>
                     <option value="Tangier">Tangier</option>
-                    <option value="Paris">Paris</option>
-                    <option value="Lyon">Lyon</option>
-                    <option value="Nairobi">Nairobi</option>
-                    <option value="Mombasa">Mombasa</option>
+                    <option value="Fes">Fes</option>
+                    <option value="Agadir">Agadir</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">Destination City</label>
+                  <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">{t.destinationCityLabel}</label>
                   <select
                     value={newDestination}
                     onChange={(e) => {
@@ -421,15 +464,14 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                     <option value="Casablanca">Casablanca</option>
                     <option value="Tangier">Tangier</option>
                     <option value="Marrakech">Marrakech</option>
-                    <option value="Lyon">Lyon</option>
-                    <option value="Paris">Paris</option>
-                    <option value="Mombasa">Mombasa</option>
+                    <option value="Fes">Fes</option>
+                    <option value="Agadir">Agadir</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 mb-1">Departure Station / Bay</label>
+                <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverOriginHub}</label>
                 <input
                   type="text"
                   required
@@ -441,7 +483,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Vehicle Model</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverVehicleModel}</label>
                   <input
                     type="text"
                     required
@@ -451,20 +493,20 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Taxi Plate Number</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverLicensePlate}</label>
                   <input
                     type="text"
                     required
                     value={newVehiclePlate}
                     onChange={(e) => setNewVehiclePlate(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono font-bold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Max Parcels in Trunk</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverMaxParcels}</label>
                   <input
                     type="number"
                     min="1"
@@ -476,10 +518,10 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Base Price ($)</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverFlatBaseRate}</label>
                   <input
                     type="number"
-                    min="5"
+                    min="10"
                     value={newBaseRate}
                     onChange={(e) => setNewBaseRate(Number(e.target.value))}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs"
@@ -498,7 +540,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                   step="5"
                   value={newDepartureMins}
                   onChange={(e) => setNewDepartureMins(Number(e.target.value))}
-                  className="w-full accent-amber-500"
+                  className="w-full accent-amber-500 cursor-pointer"
                 />
               </div>
 
@@ -506,15 +548,15 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPublishModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-300 text-zinc-700 font-semibold text-xs"
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-300 text-zinc-700 font-semibold text-xs cursor-pointer"
                 >
-                  Cancel
+                  {t.cancelBtn}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-md"
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-md cursor-pointer"
                 >
-                  Publish Trip to Senders
+                  {t.driverPublishTripBtn}
                 </button>
               </div>
             </form>
