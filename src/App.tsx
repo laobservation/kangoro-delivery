@@ -17,6 +17,7 @@ import { AuthModal } from './components/AuthModal';
 import { DriverRegisterModal } from './components/DriverRegisterModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Language } from './utils/i18n';
+import { KANGORO_LOGO_URL } from './constants';
 
 const STORAGE_KEYS = {
   DRIVERS: 'ict_taxi_drivers_v1',
@@ -625,7 +626,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <img
-              src="/logo.png"
+              src={KANGORO_LOGO_URL}
               alt="KANGORO DELIVERY"
               referrerPolicy="no-referrer"
               className="h-8 w-auto object-contain"

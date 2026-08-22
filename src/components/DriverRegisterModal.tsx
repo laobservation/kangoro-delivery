@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
+import { KANGORO_LOGO_URL } from '../constants';
 
 interface DriverRegisterModalProps {
   isOpen: boolean;
@@ -107,34 +108,34 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-xs overflow-y-auto ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-zinc-200 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-xs overflow-y-auto ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-zinc-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="p-5 bg-linear-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white flex items-center justify-between border-b border-zinc-800">
+        <div className="px-5 py-4 bg-linear-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white flex items-center justify-between border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-1 rounded-xl bg-white flex items-center justify-center shadow-xs">
               <img
-                src="/logo.png"
+                src={KANGORO_LOGO_URL}
                 alt="KANGORO DELIVERY"
                 referrerPolicy="no-referrer"
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 object-contain"
               />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-zinc-100 flex items-center gap-2">
+              <h3 className="font-extrabold text-sm sm:text-base text-zinc-100 flex items-center gap-2">
                 <span>{t.driverRegTitle}</span>
                 <span className="text-[10px] bg-amber-400 text-zinc-950 font-bold px-1.5 py-0.5 rounded uppercase">
                   Grand Taxi
                 </span>
               </h3>
-              <p className="text-xs text-zinc-400">{t.driverRegSubtitle}</p>
+              <p className="text-[11px] text-zinc-400 leading-tight">{t.driverRegSubtitle}</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

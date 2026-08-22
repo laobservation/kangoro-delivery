@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SenderUser } from '../types';
 import { Language, translations } from '../utils/i18n';
+import { KANGORO_LOGO_URL } from '../constants';
 
 interface NavbarProps {
   activeTab: 'dashboard' | 'send' | 'track' | 'driver' | 'stations';
@@ -55,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center cursor-pointer group select-none shrink-0"
           >
             <img
-              src="/logo.png"
+              src={KANGORO_LOGO_URL}
               alt="KANGORO DELIVERY"
               referrerPolicy="no-referrer"
               className="h-11 sm:h-13 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
