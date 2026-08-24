@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Truck, 
   Compass, 
@@ -6,11 +6,19 @@ import {
   User, 
   LogOut, 
   Home,
-  ChevronDown
+  ChevronDown,
+  Globe,
+  Check
 } from 'lucide-react';
 import { SenderUser, TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
 import { KANGORO_LOGO_URL } from '../constants';
+
+const LANGUAGE_OPTIONS: { code: Language; label: string; full: string; flag: string }[] = [
+  { code: 'fr', label: 'FR', full: 'Français', flag: '🇫🇷' },
+  { code: 'ar', label: 'عربي', full: 'العربية', flag: '🇲🇦' },
+  { code: 'en', label: 'EN', full: 'English', flag: '🇬🇧' },
+];
 
 interface NavbarProps {
   activeTab: 'dashboard' | 'send' | 'track' | 'driver' | 'stations';
@@ -44,6 +52,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   const t = translations[language];
   const isRtl = language === 'ar';
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const currentLangOption = LANGUAGE_OPTIONS.find(l => l.code === language) || LANGUAGE_OPTIONS[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-zinc-200 shadow-xs" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -130,45 +159,72 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Action Bar: Minimal Letters Language Switcher, Driver Access, Auth & Logout */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
-            {/* Minimal Letter Symbols Language Switcher */}
-            <div 
-              id="language-letter-switcher"
-              className="flex items-center p-0.5 bg-zinc-100 border border-zinc-200/90 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
-              title={t.changeLanguage}
-            >
-              {(['fr', 'ar', 'en'] as Language[]).map((langCode) => {
-                const isActive = language === langCode;
-                const label = langCode === 'fr' ? 'FR' : langCode === 'ar' ? 'عربي' : 'EN';
-                return (
-                  <button
-                    key={langCode}
-                    onClick={() => onSetLanguage(langCode)}
-                    className={`px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-white text-zinc-950 shadow-[0_1px_3px_rgba(0,0,0,0.12)] border border-zinc-200/80 scale-100'
-                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/50'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            {/* Language Dropdown Selector (Shows ONLY selected language; dropdown on click) */}
+            <div className="relative" ref={langMenuRef}>
+              <button
+                id="language-dropdown-trigger"
+                onClick={() => {
+                  setIsLangMenuOpen(!isLangMenuOpen);
+                  setIsUserMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white hover:bg-zinc-50 border border-zinc-200/90 text-xs font-black text-zinc-900 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:border-zinc-300 transition-all cursor-pointer min-h-[40px]"
+                title={t.changeLanguage}
+                aria-label={t.changeLanguage}
+                aria-expanded={isLangMenuOpen}
+              >
+                <Globe className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="text-xs font-extrabold tracking-wide">{currentLangOption.label}</span>
+                <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180 text-zinc-700' : ''}`} />
+              </button>
+
+              {isLangMenuOpen && (
+                <div
+                  id="language-dropdown-menu"
+                  className={`absolute mt-1.5 w-36 bg-white rounded-2xl shadow-xl border border-zinc-200 py-1.5 z-50 animate-in fade-in zoom-in-95 ${
+                    isRtl ? 'left-0' : 'right-0'
+                  }`}
+                >
+                  {LANGUAGE_OPTIONS.map((opt) => {
+                    const isSelected = language === opt.code;
+                    return (
+                      <button
+                        key={opt.code}
+                        onClick={() => {
+                          onSetLanguage(opt.code);
+                          setIsLangMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-500/10 text-amber-950 font-black'
+                            : 'text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{opt.flag}</span>
+                          <span>{opt.full}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 stroke-[3]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Chauffeur Connection State or Login Trigger */}
+            {/* Chauffeur Connection State or Login Trigger - Pure Icon Button */}
             {currentDriver ? (
-              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-300/80 pl-2 pr-1 py-1 rounded-full shadow-xs">
-                <img
-                  src={currentDriver.avatar}
-                  alt={currentDriver.name}
-                  className="w-5 h-5 rounded-full object-cover border border-amber-400 shrink-0"
-                />
+              <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-300/80 p-1 rounded-full shadow-xs">
                 <button
                   onClick={() => setActiveTab('driver')}
-                  className="text-xs font-black text-amber-950 hover:underline max-w-[80px] sm:max-w-[110px] truncate text-left cursor-pointer"
-                  title={`Active Chauffeur: ${currentDriver.name}`}
+                  className="w-8 h-8 rounded-full overflow-hidden border border-amber-400 shrink-0 cursor-pointer"
+                  title={`Chauffeur: ${currentDriver.name}`}
+                  aria-label={`Chauffeur: ${currentDriver.name}`}
                 >
-                  {currentDriver.name.split(' ')[0]}
+                  <img
+                    src={currentDriver.avatar}
+                    alt={currentDriver.name}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
                 <button
                   id="nav-driver-logout-btn"
@@ -177,7 +233,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setActiveTab('send');
                   }}
                   title="Disconnect Chauffeur"
-                  className="p-1 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                  aria-label="Disconnect Chauffeur"
+                  className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -186,47 +243,30 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="nav-open-driver-login-btn"
                 onClick={onOpenDriverLogin}
-                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-amber-950 border border-amber-300/90 text-xs font-extrabold shadow-[0_2px_6px_rgba(245,158,11,0.12)] hover:shadow-[0_4px_10px_rgba(245,158,11,0.2)] transition-all cursor-pointer"
-                title="Chauffeur Login"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-white hover:bg-amber-50 text-amber-600 border border-amber-300/90 shadow-[0_2px_6px_rgba(245,158,11,0.12)] hover:shadow-[0_4px_10px_rgba(245,158,11,0.2)] flex items-center justify-center transition-all cursor-pointer"
+                title="Chauffeur Terminal"
+                aria-label="Chauffeur Terminal"
               >
-                <Truck className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">Chauffeur</span>
+                <Truck className="w-5 h-5 text-amber-600" />
               </button>
             )}
 
-            {/* User Profile or Connect with explicit Logout */}
+            {/* Sender Profile - Pure Icon Button */}
             {currentUser ? (
-              <div className="relative">
-                <div className="flex items-center gap-1">
-                  <button 
-                    id="nav-user-profile-badge"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 min-h-[44px] rounded-xl bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 transition-colors cursor-pointer"
-                    title={`${t.navConnectedAs} ${currentUser.name}`}
-                  >
-                    <img
-                      src={currentUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
-                      alt={currentUser.name}
-                      className="w-7 h-7 rounded-lg object-cover border border-amber-400"
-                    />
-                    <span className="text-xs font-bold text-zinc-900 hidden sm:inline max-w-[90px] truncate">
-                      {currentUser.name}
-                    </span>
-                    <ChevronDown className="w-3 h-3 text-zinc-500 hidden sm:inline" />
-                  </button>
-
-                  {/* Explicit Logout Icon Button for fast 1-click logout */}
-                  <button
-                    id="nav-logout-direct-btn"
-                    onClick={() => {
-                      if (onLogoutSender) onLogoutSender();
-                    }}
-                    title={t.navLogout}
-                    className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-zinc-500 hover:text-red-600 hover:bg-red-50 border border-zinc-200 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
+              <div className="relative" ref={userMenuRef}>
+                <button 
+                  id="nav-user-profile-badge"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full overflow-hidden border-2 border-amber-400 shadow-xs hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer flex items-center justify-center"
+                  title={`${t.navConnectedAs} ${currentUser.name}`}
+                  aria-label={`${t.navConnectedAs} ${currentUser.name}`}
+                >
+                  <img
+                    src={currentUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+                    alt={currentUser.name}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
 
                 {/* User Dropdown Menu */}
                 {isUserMenuOpen && (
@@ -273,11 +313,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => {
                   if (onRequireAuth) onRequireAuth();
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-extrabold transition-all shadow-xs cursor-pointer"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-zinc-950 hover:bg-zinc-800 text-amber-400 shadow-[0_2px_6px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all cursor-pointer"
+                title={t.navConnectSender}
+                aria-label={t.navConnectSender}
               >
-                <User className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">{t.navConnectSender}</span>
-                <span className="sm:hidden">Connect</span>
+                <User className="w-5 h-5 text-amber-400" />
               </button>
             )}
           </div>

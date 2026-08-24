@@ -25,10 +25,19 @@ export function generateOtp(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
+export function normalizeCityName(cityName: string): string {
+  const c = cityName.trim().toLowerCase();
+  if (c === 'casa' || c === 'casablanca') return 'casablanca';
+  return c;
+}
+
 export function getRouteDetails(fromCity: string, toCity: string): CityRoute {
+  const normFrom = normalizeCityName(fromCity);
+  const normTo = normalizeCityName(toCity);
+
   const found = POPULAR_ROUTES.find(
-    r => (r.from.toLowerCase() === fromCity.toLowerCase() && r.to.toLowerCase() === toCity.toLowerCase()) ||
-         (r.from.toLowerCase() === toCity.toLowerCase() && r.to.toLowerCase() === fromCity.toLowerCase())
+    r => (normalizeCityName(r.from) === normFrom && normalizeCityName(r.to) === normTo) ||
+         (normalizeCityName(r.from) === normTo && normalizeCityName(r.to) === normFrom)
   );
 
   if (found) {

@@ -22,15 +22,16 @@ import {
   Plus
 } from 'lucide-react';
 import { TaxiDriver, ParcelSize, PaymentMethod, ParcelDelivery, SenderUser } from '../types';
-import { POPULAR_ROUTES } from '../data/mockData';
 import { 
   formatCurrency, 
   calculateDeliveryPrice, 
   generateTrackingCode, 
   generateOtp,
-  getRouteDetails
+  getRouteDetails,
+  normalizeCityName
 } from '../utils/helpers';
 import { Language, translations } from '../utils/i18n';
+import { CitySelector } from './CitySelector';
 
 interface SenderViewProps {
   drivers: TaxiDriver[];
@@ -99,6 +100,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
 
   // Ref to driver section for smooth scrolling
   const driversSectionRef = useRef<HTMLDivElement>(null);
+  // Ref to city selector
+  const citySelectorRef = useRef<HTMLDivElement>(null);
 
   // Update sender info if currentUser changes
   useEffect(() => {
@@ -113,8 +116,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
 
   const availableDrivers = drivers.filter(d => {
     const matchRoute = 
-      d.originCity.toLowerCase() === originCity.toLowerCase() &&
-      d.destinationCity.toLowerCase() === destinationCity.toLowerCase();
+      normalizeCityName(d.originCity) === normalizeCityName(originCity) &&
+      normalizeCityName(d.destinationCity) === normalizeCityName(destinationCity);
     
     if (!matchRoute) return false;
     if (selectedCategoryFilter === 'plenty' && d.availableTrunkSpace !== 'plenty') return false;
@@ -142,23 +145,19 @@ export const SenderView: React.FC<SenderViewProps> = ({
     isFragile
   );
 
-  const handleStartSendingCTA = () => {
-    if (!currentUser) {
-      onRequireAuth(() => {
-        // After auth, scroll to drivers or open booking
-        if (availableDrivers.length > 0) {
-          handleOpenBooking(availableDrivers[0]);
-        } else {
-          driversSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-    } else {
-      if (availableDrivers.length > 0) {
-        handleOpenBooking(availableDrivers[0]);
-      } else {
-        driversSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
+  const handlePromptDestinationSelection = () => {
+    if (citySelectorRef.current) {
+      citySelectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    setTimeout(() => {
+      const trigger = document.getElementById('destination-city-selector-trigger');
+      trigger?.focus();
+      trigger?.click();
+    }, 350);
+  };
+
+  const handleDispatchOnRoute = () => {
+    driversSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleOpenBooking = (driver: TaxiDriver) => {
@@ -290,7 +289,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 id="hero-start-sending-cta-btn"
-                onClick={handleStartSendingCTA}
+                onClick={handlePromptDestinationSelection}
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-extrabold text-base shadow-xl hover:shadow-2xl transition-all cursor-pointer flex items-center justify-center gap-3 group border border-zinc-800"
               >
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold">
@@ -318,57 +317,26 @@ export const SenderView: React.FC<SenderViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Route Corridor Buttons - Airbnb Pill Style */}
-          <div className="flex items-center sm:justify-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 -mx-2 sm:mx-0 flex-nowrap sm:flex-wrap pt-2">
-            <span className="text-xs font-bold text-zinc-600 shrink-0">{t.quickCorridors}</span>
-            {POPULAR_ROUTES.map((route, idx) => {
-              const isActive = originCity === route.from && destinationCity === route.to;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setOriginCity(route.from);
-                    setDestinationCity(route.to);
-                  }}
-                  className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 transition-all duration-200 cursor-pointer min-h-[36px] flex items-center gap-1.5 ${
-                    isActive 
-                      ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]' 
-                      : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
-                  }`}
-                >
-                  <span className="text-xs">🛣️</span>
-                  <span>{route.from} ➔ {route.to}</span>
-                </button>
-              );
-            })}
-          </div>
-
           {/* City Selection & Instant Price Estimator Card */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md border border-zinc-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div 
+            ref={citySelectorRef}
+            className="bg-white rounded-3xl p-4 sm:p-6 shadow-xl border border-zinc-200/90 grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-center"
+          >
             {/* Origin City */}
-            <div className="md:col-span-4 space-y-1">
-              <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-amber-500" /> {t.originCityLabel}
-              </label>
-              <select
-                id="select-origin-city"
+            <div className="md:col-span-4">
+              <CitySelector
+                id="origin-city-selector"
+                type="origin"
                 value={originCity}
-                onChange={(e) => setOriginCity(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden transition-all cursor-pointer"
-              >
-                <option value="Casablanca">Casablanca</option>
-                <option value="Rabat">Rabat</option>
-                <option value="Marrakech">Marrakech</option>
-                <option value="Tangier">Tangier</option>
-                <option value="Fes">Fes</option>
-                <option value="Agadir">Agadir</option>
-                <option value="Meknes">Meknes</option>
-                <option value="Oujda">Oujda</option>
-              </select>
+                onChange={(val) => setOriginCity(val)}
+                otherCity={destinationCity}
+                label={t.originCityLabel}
+                language={language}
+              />
             </div>
 
             {/* Swap Button */}
-            <div className="md:col-span-1 flex justify-center py-1 md:py-0">
+            <div className="md:col-span-1 flex justify-center pt-2 md:pt-4">
               <button
                 type="button"
                 id="btn-swap-cities"
@@ -377,44 +345,36 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   setOriginCity(destinationCity);
                   setDestinationCity(temp);
                 }}
-                className="p-2.5 rounded-full bg-zinc-100 hover:bg-amber-100 text-zinc-700 hover:text-amber-900 border border-zinc-300 transition-all cursor-pointer shadow-xs"
-                title="Swap origin and destination"
+                className="w-10 h-10 rounded-2xl bg-zinc-100 hover:bg-amber-500 text-zinc-700 hover:text-zinc-950 border border-zinc-200/90 transition-all duration-200 cursor-pointer shadow-xs active:scale-90 flex items-center justify-center group"
+                title="Swap departure and arrival cities"
+                aria-label="Swap origin and destination cities"
               >
-                <ArrowRight className="w-4 h-4 md:rotate-0 rotate-90" />
+                <ArrowRight className="w-4 h-4 md:rotate-0 rotate-90 group-hover:scale-110 transition-transform" />
               </button>
             </div>
 
             {/* Destination City */}
-            <div className="md:col-span-4 space-y-1">
-              <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {t.destinationCityLabel}
-              </label>
-              <select
-                id="select-destination-city"
+            <div className="md:col-span-4">
+              <CitySelector
+                id="destination-city-selector"
+                type="destination"
                 value={destinationCity}
-                onChange={(e) => setDestinationCity(e.target.value)}
-                className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden transition-all cursor-pointer"
-              >
-                <option value="Rabat">Rabat</option>
-                <option value="Casablanca">Casablanca</option>
-                <option value="Marrakech">Marrakech</option>
-                <option value="Tangier">Tangier</option>
-                <option value="Fes">Fes</option>
-                <option value="Agadir">Agadir</option>
-                <option value="Meknes">Meknes</option>
-                <option value="Oujda">Oujda</option>
-              </select>
+                onChange={(val) => setDestinationCity(val)}
+                otherCity={originCity}
+                label={t.destinationCityLabel}
+                language={language}
+              />
             </div>
 
             {/* Start on Route CTA Button */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-3 pt-2 md:pt-4">
               <button
                 id="btn-start-route-dispatch"
-                onClick={handleStartSendingCTA}
-                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                onClick={handleDispatchOnRoute}
+                className="w-full py-4 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 group border border-zinc-800"
               >
                 <span>{t.dispatchOnRouteBtn}</span>
-                <ChevronRight className={`w-4 h-4 stroke-[3] ${isRtl ? 'rotate-180' : ''}`} />
+                <ChevronRight className={`w-4 h-4 text-amber-400 group-hover:translate-x-0.5 transition-transform stroke-[3] ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : ''}`} />
               </button>
             </div>
           </div>
@@ -515,12 +475,22 @@ export const SenderView: React.FC<SenderViewProps> = ({
               <Car className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-extrabold text-zinc-900 text-base">No matching taxis for this corridor right now</h3>
+              <h3 className="font-extrabold text-zinc-900 text-base">
+                {language === 'ar' 
+                  ? `لا يوجد سائقون مسجلون على خط ${originCity} ➔ ${destinationCity} حالياً`
+                  : language === 'fr'
+                  ? `Aucun chauffeur enregistré sur la ligne ${originCity} ➔ ${destinationCity} pour le moment`
+                  : `No registered drivers operating on the ${originCity} ➔ ${destinationCity} line right now`}
+              </h3>
               <p className="text-xs text-zinc-600 max-w-md mx-auto">
-                Try clearing your search query or switch corridors to Casablanca ➔ Rabat or Marrakech ➔ Casablanca.
+                {language === 'ar'
+                  ? 'يظهر في البحث فقط السائقون المسجلون والمعينون لمحطات هذا الخط.'
+                  : language === 'fr'
+                  ? 'Seuls les chauffeurs enregistrés et rattachés aux stations de cette ligne apparaissent ici.'
+                  : 'Only drivers registered and assigned to stations on this line appear in search results.'}
               </p>
             </div>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
               <button
                 onClick={() => {
                   setOriginCity('Casablanca');
@@ -528,9 +498,9 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   setDriverSearchQuery('');
                   setSelectedCategoryFilter('all');
                 }}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs cursor-pointer shadow-xs"
               >
-                View Casablanca ➔ Rabat Taxis
+                {language === 'ar' ? 'عرض خط الدار البيضاء ➔ الرباط' : language === 'fr' ? 'Voir ligne Casablanca ➔ Rabat' : 'View Casablanca ➔ Rabat Line'}
               </button>
             </div>
           </div>

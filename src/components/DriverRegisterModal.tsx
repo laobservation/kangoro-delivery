@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
   Car, 
@@ -13,11 +13,13 @@ import {
   Sparkles,
   FileCheck,
   CheckCircle2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Building2
 } from 'lucide-react';
 import { TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
 import { KANGORO_LOGO_URL } from '../constants';
+import { getRouteDetails } from '../utils/helpers';
 
 interface DriverRegisterModalProps {
   isOpen: boolean;
@@ -53,8 +55,24 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
   const [originCity, setOriginCity] = useState('Casablanca');
   const [destinationCity, setDestinationCity] = useState('Rabat');
   const [originStation, setOriginStation] = useState('Central Grand Taxi Station (Derb Omar)');
-  const [destinationStation, setDestinationStation] = useState('Rabat Ville Station (Bab El Had)');
+  const [destinationStation, setDestinationStation] = useState('Rabat Ville Grand Taxi Station (Bab El Had)');
   const [maxParcels, setMaxParcels] = useState(6);
+
+  // Update stations default presets whenever origin or destination city changes
+  useEffect(() => {
+    const route = getRouteDetails(originCity, destinationCity);
+    if (route.stationsFrom && route.stationsFrom.length > 0) {
+      setOriginStation(route.stationsFrom[0]);
+    } else {
+      setOriginStation(`${originCity} Central Taxi Bay`);
+    }
+
+    if (route.stationsTo && route.stationsTo.length > 0) {
+      setDestinationStation(route.stationsTo[0]);
+    } else {
+      setDestinationStation(`${destinationCity} Main Terminal`);
+    }
+  }, [originCity, destinationCity]);
   const [flatBaseRate, setFlatBaseRate] = useState(18);
   const [basePricePerKg, setBasePricePerKg] = useState(3.5);
   const [acceptsDoorstep, setAcceptsDoorstep] = useState(true);
@@ -365,29 +383,81 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
-                    {t.driverOriginHub}
+                  <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1 flex items-center justify-between">
+                    <span>{t.driverOriginHub}</span>
+                    <span className="text-[10px] text-amber-700 font-normal">Taxi Station / Bay</span>
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={originStation}
-                    onChange={(e) => setOriginStation(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
-                  />
+                  {getRouteDetails(originCity, destinationCity).stationsFrom?.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <select
+                        value={originStation}
+                        onChange={(e) => setOriginStation(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                      >
+                        {getRouteDetails(originCity, destinationCity).stationsFrom.map((stn, idx) => (
+                          <option key={idx} value={stn}>{stn}</option>
+                        ))}
+                        <option value="custom">✏️ Other Custom Station...</option>
+                      </select>
+                      {(!getRouteDetails(originCity, destinationCity).stationsFrom.includes(originStation) || originStation === 'custom') && (
+                        <input
+                          type="text"
+                          required
+                          placeholder="Enter origin taxi station name"
+                          value={originStation === 'custom' ? '' : originStation}
+                          onChange={(e) => setOriginStation(e.target.value)}
+                          className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={originStation}
+                      onChange={(e) => setOriginStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
+                    />
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
-                    {t.driverDestinationHub}
+                  <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1 flex items-center justify-between">
+                    <span>{t.driverDestinationHub}</span>
+                    <span className="text-[10px] text-amber-700 font-normal">Arrival Station / Bay</span>
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={destinationStation}
-                    onChange={(e) => setDestinationStation(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
-                  />
+                  {getRouteDetails(originCity, destinationCity).stationsTo?.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <select
+                        value={destinationStation}
+                        onChange={(e) => setDestinationStation(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                      >
+                        {getRouteDetails(originCity, destinationCity).stationsTo.map((stn, idx) => (
+                          <option key={idx} value={stn}>{stn}</option>
+                        ))}
+                        <option value="custom">✏️ Other Custom Station...</option>
+                      </select>
+                      {(!getRouteDetails(originCity, destinationCity).stationsTo.includes(destinationStation) || destinationStation === 'custom') && (
+                        <input
+                          type="text"
+                          required
+                          placeholder="Enter arrival taxi station name"
+                          value={destinationStation === 'custom' ? '' : destinationStation}
+                          onChange={(e) => setDestinationStation(e.target.value)}
+                          className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={destinationStation}
+                      onChange={(e) => setDestinationStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
+                    />
+                  )}
                 </div>
               </div>
             </div>

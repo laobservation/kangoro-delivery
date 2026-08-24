@@ -23,7 +23,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { TaxiDriver, ParcelDelivery } from '../types';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency, formatDate, getRouteDetails } from '../utils/helpers';
 import { HandoverVerifyModal } from './HandoverVerifyModal';
 import { Language, translations } from '../utils/i18n';
 import { KANGORO_LOGO_URL } from '../constants';
@@ -619,10 +619,16 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                   <select
                     value={newOrigin}
                     onChange={(e) => {
-                      setNewOrigin(e.target.value);
-                      setNewOriginStation(`${e.target.value} Central Grand Taxi Station`);
+                      const origin = e.target.value;
+                      setNewOrigin(origin);
+                      const route = getRouteDetails(origin, newDestination);
+                      if (route.stationsFrom && route.stationsFrom.length > 0) {
+                        setNewOriginStation(route.stationsFrom[0]);
+                      } else {
+                        setNewOriginStation(`${origin} Central Grand Taxi Station`);
+                      }
                     }}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer"
                   >
                     <option value="Casablanca">Casablanca</option>
                     <option value="Rabat">Rabat</option>
@@ -638,10 +644,16 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                   <select
                     value={newDestination}
                     onChange={(e) => {
-                      setNewDestination(e.target.value);
-                      setNewDestinationStation(`${e.target.value} Grand Station`);
+                      const dest = e.target.value;
+                      setNewDestination(dest);
+                      const route = getRouteDetails(newOrigin, dest);
+                      if (route.stationsTo && route.stationsTo.length > 0) {
+                        setNewDestinationStation(route.stationsTo[0]);
+                      } else {
+                        setNewDestinationStation(`${dest} Grand Taxi Station`);
+                      }
                     }}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer"
                   >
                     <option value="Rabat">Rabat</option>
                     <option value="Casablanca">Casablanca</option>
@@ -653,15 +665,52 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverOriginHub}</label>
-                <input
-                  type="text"
-                  required
-                  value={newOriginStation}
-                  onChange={(e) => setNewOriginStation(e.target.value)}
-                  className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverOriginHub}</label>
+                  {getRouteDetails(newOrigin, newDestination).stationsFrom?.length > 0 ? (
+                    <select
+                      value={newOriginStation}
+                      onChange={(e) => setNewOriginStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer"
+                    >
+                      {getRouteDetails(newOrigin, newDestination).stationsFrom.map((stn, idx) => (
+                        <option key={idx} value={stn}>{stn}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={newOriginStation}
+                      onChange={(e) => setNewOriginStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">{t.driverDestinationHub}</label>
+                  {getRouteDetails(newOrigin, newDestination).stationsTo?.length > 0 ? (
+                    <select
+                      value={newDestinationStation}
+                      onChange={(e) => setNewDestinationStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer"
+                    >
+                      {getRouteDetails(newOrigin, newDestination).stationsTo.map((stn, idx) => (
+                        <option key={idx} value={stn}>{stn}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={newDestinationStation}
+                      onChange={(e) => setNewDestinationStation(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs"
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
