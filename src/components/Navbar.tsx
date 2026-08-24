@@ -3,16 +3,12 @@ import {
   Truck, 
   Compass, 
   Building2, 
-  RefreshCw, 
-  LayoutDashboard, 
   User, 
   LogOut, 
   Home,
-  Globe,
-  PlusCircle,
   ChevronDown
 } from 'lucide-react';
-import { SenderUser } from '../types';
+import { SenderUser, TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
 import { KANGORO_LOGO_URL } from '../constants';
 
@@ -20,10 +16,12 @@ interface NavbarProps {
   activeTab: 'dashboard' | 'send' | 'track' | 'driver' | 'stations';
   setActiveTab: (tab: 'dashboard' | 'send' | 'track' | 'driver' | 'stations') => void;
   activeDeliveriesCount: number;
-  onResetData: () => void;
   currentUser?: SenderUser | null;
+  currentDriver?: TaxiDriver | null;
   onLogoutSender?: () => void;
+  onLogoutDriver?: () => void;
   onRequireAuth?: () => void;
+  onOpenDriverLogin?: () => void;
   language: Language;
   onSetLanguage: (lang: Language) => void;
   onOpenDriverRegister: () => void;
@@ -33,10 +31,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   activeDeliveriesCount,
-  onResetData,
   currentUser,
+  currentDriver,
   onLogoutSender,
+  onLogoutDriver,
   onRequireAuth,
+  onOpenDriverLogin,
   language,
   onSetLanguage,
   onOpenDriverRegister
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           </div>
 
-          {/* Center Navigation Tabs - Airbnb Capsule Pill Style */}
+          {/* Center Navigation Tabs */}
           <nav className="hidden md:flex items-center gap-2">
             <button
               id="nav-send-tab"
@@ -96,37 +96,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            <button
-              id="nav-dashboard-tab"
-              onClick={() => {
-                if (!currentUser && onRequireAuth) {
-                  onRequireAuth();
-                } else {
-                  setActiveTab('dashboard');
-                }
-              }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
-                  : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
-              }`}
-            >
-              <LayoutDashboard className={`w-3.5 h-3.5 ${activeTab === 'dashboard' ? 'text-amber-600 stroke-[2.4]' : 'text-zinc-500'}`} />
-              <span>{currentUser ? t.navMyOrders : t.navSenderAccount}</span>
-            </button>
-
-            <button
-              id="nav-driver-tab"
-              onClick={() => setActiveTab('driver')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
-                activeTab === 'driver'
-                  ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]'
-                  : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
-              }`}
-            >
-              <Truck className={`w-3.5 h-3.5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.4]' : 'text-zinc-500'}`} />
-              <span>{t.navDriverTerminal}</span>
-            </button>
+            {/* ONLY DISPLAY DRIVER TERMINAL TAB WHEN CHAUFFEUR IS CONNECTED */}
+            {currentDriver && (
+              <button
+                id="nav-driver-tab"
+                onClick={() => setActiveTab('driver')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
+                  activeTab === 'driver'
+                    ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]'
+                    : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
+                }`}
+              >
+                <Truck className={`w-3.5 h-3.5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.4]' : 'text-zinc-500'}`} />
+                <span>{t.navDriverTerminal}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </button>
+            )}
 
             <button
               id="nav-stations-tab"
@@ -142,8 +127,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action Bar: Minimal Letters Language Switcher, Driver Register CTA, Auth & Logout */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Right Action Bar: Minimal Letters Language Switcher, Driver Access, Auth & Logout */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             
             {/* Minimal Letter Symbols Language Switcher */}
             <div 
@@ -170,17 +155,44 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </div>
 
-            {/* Register as Taxi Driver Button */}
-            <button
-              id="nav-register-driver-btn"
-              onClick={onOpenDriverRegister}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-amber-950 border border-amber-300/90 text-xs font-extrabold shadow-[0_2px_6px_rgba(245,158,11,0.12)] hover:shadow-[0_4px_10px_rgba(245,158,11,0.2)] transition-all cursor-pointer"
-              title={t.navRegisterDriver}
-            >
-              <PlusCircle className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden sm:inline">{t.navRegisterDriver}</span>
-              <span className="sm:hidden text-[11px]">Drive</span>
-            </button>
+            {/* Chauffeur Connection State or Login Trigger */}
+            {currentDriver ? (
+              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-300/80 pl-2 pr-1 py-1 rounded-full shadow-xs">
+                <img
+                  src={currentDriver.avatar}
+                  alt={currentDriver.name}
+                  className="w-5 h-5 rounded-full object-cover border border-amber-400 shrink-0"
+                />
+                <button
+                  onClick={() => setActiveTab('driver')}
+                  className="text-xs font-black text-amber-950 hover:underline max-w-[80px] sm:max-w-[110px] truncate text-left cursor-pointer"
+                  title={`Active Chauffeur: ${currentDriver.name}`}
+                >
+                  {currentDriver.name.split(' ')[0]}
+                </button>
+                <button
+                  id="nav-driver-logout-btn"
+                  onClick={() => {
+                    if (onLogoutDriver) onLogoutDriver();
+                    setActiveTab('send');
+                  }}
+                  title="Disconnect Chauffeur"
+                  className="p-1 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                id="nav-open-driver-login-btn"
+                onClick={onOpenDriverLogin}
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-amber-950 border border-amber-300/90 text-xs font-extrabold shadow-[0_2px_6px_rgba(245,158,11,0.12)] hover:shadow-[0_4px_10px_rgba(245,158,11,0.2)] transition-all cursor-pointer"
+                title="Chauffeur Login"
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Chauffeur</span>
+              </button>
+            )}
 
             {/* User Profile or Connect with explicit Logout */}
             {currentUser ? (
@@ -230,17 +242,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <button
                       onClick={() => {
-                        setActiveTab('dashboard');
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full px-3 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 text-left flex items-center gap-2 cursor-pointer min-h-[40px]"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-zinc-500" />
-                      <span>{t.navMyOrders}</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
                         onOpenDriverRegister();
                         setIsUserMenuOpen(false);
                       }}
@@ -279,16 +280,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="sm:hidden">Connect</span>
               </button>
             )}
-
-            {/* Reset Demo Button */}
-            <button
-              id="reset-demo-btn"
-              onClick={onResetData}
-              title="Reset Demo Data"
-              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>

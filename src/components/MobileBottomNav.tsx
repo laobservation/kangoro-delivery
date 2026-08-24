@@ -2,11 +2,10 @@ import React from 'react';
 import { 
   Home, 
   Compass, 
-  LayoutDashboard, 
   Truck, 
   Building2 
 } from 'lucide-react';
-import { SenderUser } from '../types';
+import { SenderUser, TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
 
 interface MobileBottomNavProps {
@@ -14,6 +13,7 @@ interface MobileBottomNavProps {
   setActiveTab: (tab: 'dashboard' | 'send' | 'track' | 'driver' | 'stations') => void;
   activeDeliveriesCount: number;
   currentUser?: SenderUser | null;
+  currentDriver?: TaxiDriver | null;
   onRequireAuth?: () => void;
   language: Language;
 }
@@ -22,8 +22,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
   setActiveTab,
   activeDeliveriesCount,
-  currentUser,
-  onRequireAuth,
+  currentDriver,
   language
 }) => {
   const t = translations[language];
@@ -71,39 +70,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         <span className="truncate max-w-[64px] mt-0.5 leading-tight">{t.navLiveTracking.split(' ')[0]}</span>
       </button>
 
-      {/* Orders / Account */}
-      <button
-        id="mobile-nav-dashboard"
-        onClick={() => {
-          if (!currentUser && onRequireAuth) {
-            onRequireAuth();
-          } else {
-            setActiveTab('dashboard');
-          }
-        }}
-        className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-[11px] font-bold min-h-[50px] transition-all cursor-pointer ${
-          activeTab === 'dashboard' 
-            ? 'text-zinc-950 bg-zinc-100 font-extrabold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]' 
-            : 'text-zinc-500 hover:text-zinc-900 active:scale-95'
-        }`}
-      >
-        <LayoutDashboard className={`w-5 h-5 ${activeTab === 'dashboard' ? 'text-amber-600 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="truncate max-w-[64px] mt-0.5 leading-tight">{currentUser ? t.navMyOrders.split(' ')[0] : 'Compte'}</span>
-      </button>
-
-      {/* Driver Terminal */}
-      <button
-        id="mobile-nav-driver"
-        onClick={() => setActiveTab('driver')}
-        className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-[11px] font-bold min-h-[50px] transition-all cursor-pointer ${
-          activeTab === 'driver' 
-            ? 'text-zinc-950 bg-amber-100/90 font-extrabold border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]' 
-            : 'text-zinc-500 hover:text-zinc-900 active:scale-95'
-        }`}
-      >
-        <Truck className={`w-5 h-5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="truncate max-w-[64px] mt-0.5 leading-tight">{t.navDriverTerminal.split(' ')[0]}</span>
-      </button>
+      {/* Driver Terminal - Only visible when connected */}
+      {currentDriver && (
+        <button
+          id="mobile-nav-driver"
+          onClick={() => setActiveTab('driver')}
+          className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl text-[11px] font-bold min-h-[50px] transition-all cursor-pointer ${
+            activeTab === 'driver' 
+              ? 'text-zinc-950 bg-amber-100/90 font-extrabold border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]' 
+              : 'text-zinc-500 hover:text-zinc-900 active:scale-95'
+          }`}
+        >
+          <Truck className={`w-5 h-5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="truncate max-w-[64px] mt-0.5 leading-tight">{t.navDriverTerminal.split(' ')[0]}</span>
+        </button>
+      )}
 
       {/* Hubs / Stations */}
       <button

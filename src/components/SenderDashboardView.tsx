@@ -71,7 +71,7 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
   const isRtl = language === 'ar';
 
   // Login Form States (when not connected)
-  const [authTab, setAuthTab] = useState<'quick' | 'phone' | 'register'>('quick');
+  const [authTab, setAuthTab] = useState<'phone' | 'register'>('phone');
   
   // Phone OTP Flow State
   const [phoneInput, setPhoneInput] = useState('+212 6 61 22 33 44');
@@ -286,20 +286,7 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
           </div>
 
           {/* Auth Navigation Tabs */}
-          <div className="flex items-center justify-center p-1 bg-zinc-100 rounded-xl max-w-md mx-auto">
-            <button
-              id="auth-tab-quick"
-              onClick={() => setAuthTab('quick')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                authTab === 'quick'
-                  ? 'bg-white text-zinc-950 shadow-xs'
-                  : 'text-zinc-600 hover:text-zinc-900'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>One-Click Connect</span>
-            </button>
-
+          <div className="flex items-center justify-center p-1 bg-zinc-100 rounded-xl max-w-sm mx-auto">
             <button
               id="auth-tab-phone"
               onClick={() => setAuthTab('phone')}
@@ -310,7 +297,7 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
               }`}
             >
               <Smartphone className="w-3.5 h-3.5 text-amber-500" />
-              <span>Phone / SMS OTP</span>
+              <span>Log In via Phone</span>
             </button>
 
             <button
@@ -323,75 +310,11 @@ export const SenderDashboardView: React.FC<SenderDashboardViewProps> = ({
               }`}
             >
               <UserPlus className="w-3.5 h-3.5 text-amber-500" />
-              <span>New Account</span>
+              <span>Create Account</span>
             </button>
           </div>
 
-          {/* TAB 1: ONE-CLICK QUICK PROFILES */}
-          {authTab === 'quick' && (
-            <div className="space-y-4 max-w-2xl mx-auto">
-              <div className="text-center text-xs text-zinc-500 font-medium">
-                Select an existing sender account to connect instantly:
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {availableUsers.map((user) => {
-                  const userOrders = deliveries.filter(d => 
-                    d.senderName.toLowerCase().includes(user.name.toLowerCase()) ||
-                    user.name.toLowerCase().includes(d.senderName.toLowerCase())
-                  );
-                  const activeCount = userOrders.filter(d => d.status !== 'delivered' && d.status !== 'cancelled').length;
-
-                  return (
-                    <div
-                      key={user.id}
-                      id={`quick-login-${user.id}`}
-                      onClick={() => onLogin(user)}
-                      className="p-4 rounded-2xl bg-zinc-50 hover:bg-amber-50/80 border border-zinc-200 hover:border-amber-400 transition-all cursor-pointer group space-y-3 flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <img
-                            src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover border border-zinc-200"
-                          />
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-700 capitalize">
-                            {user.accountType?.replace('_', ' ') || 'Sender'}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="font-extrabold text-sm text-zinc-900 group-hover:text-amber-950 line-clamp-1">
-                            {user.name}
-                          </div>
-                          <div className="text-xs text-zinc-500 font-mono mt-0.5">
-                            {user.phone}
-                          </div>
-                          <div className="text-[11px] text-zinc-600 flex items-center gap-1 mt-1">
-                            <MapPin className="w-3 h-3 text-zinc-400" />
-                            <span>{user.city || 'Casablanca'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between text-xs">
-                        <span className="font-semibold text-zinc-600">
-                          {userOrders.length} parcel{userOrders.length === 1 ? '' : 's'}
-                          {activeCount > 0 && ` (${activeCount} live)`}
-                        </span>
-                        <span className="text-amber-700 font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                          Connect <ChevronRight className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: PHONE / SMS OTP SIGN IN */}
+          {/* TAB 1: PHONE / SMS OTP SIGN IN */}
           {authTab === 'phone' && (
             <div className="max-w-md mx-auto space-y-5">
               {!otpSent ? (

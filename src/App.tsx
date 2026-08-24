@@ -15,6 +15,7 @@ import { StationsDirectoryView } from './components/StationsDirectoryView';
 import { ChatModal } from './components/ChatModal';
 import { AuthModal } from './components/AuthModal';
 import { DriverRegisterModal } from './components/DriverRegisterModal';
+import { DriverAuthModal } from './components/DriverAuthModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Language } from './utils/i18n';
 import { KANGORO_LOGO_URL } from './constants';
@@ -25,6 +26,7 @@ const STORAGE_KEYS = {
   CHAT: 'ict_chat_v1',
   USERS: 'ict_sender_users_v1',
   CURRENT_USER: 'ict_current_sender_v1',
+  CURRENT_DRIVER: 'ict_current_driver_v1',
   LANGUAGE: 'ict_language_v1'
 };
 
@@ -48,10 +50,12 @@ export default function App() {
 
   // Authentication Modal State (for Senders)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register');
   const authSuccessCallbackRef = useRef<(() => void) | null>(null);
 
   // Driver Registration Modal State
   const [isDriverRegisterModalOpen, setIsDriverRegisterModalOpen] = useState(false);
+  const [isDriverAuthModalOpen, setIsDriverAuthModalOpen] = useState(false);
 
   // Sender User Authentication State
   const [senderUsers, setSenderUsers] = useState<SenderUser[]>(() => {
@@ -69,6 +73,16 @@ export default function App() {
       if (saved) return JSON.parse(saved);
       // Start disconnected by default
       return null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Chauffeur / Driver Authentication State (Restricted Portal)
+  const [currentDriver, setCurrentDriver] = useState<TaxiDriver | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_DRIVER);
+      return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
@@ -103,7 +117,7 @@ export default function App() {
   });
 
   const [activeDriverId, setActiveDriverId] = useState<string>(INITIAL_DRIVERS[0].id);
-  const [selectedTrackingCode, setSelectedTrackingCode] = useState<string>(INITIAL_PARCELS[0].trackingCode);
+  const [selectedTrackingCode, setSelectedTrackingCode] = useState<string>('');
   const [activeChatDelivery, setActiveChatDelivery] = useState<ParcelDelivery | null>(null);
 
   // Sync Language & RTL direction to document
@@ -138,6 +152,19 @@ export default function App() {
     }
   }, [currentSenderUser]);
 
+  // Sync connected driver to local storage
+  useEffect(() => {
+    try {
+      if (currentDriver) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_DRIVER, JSON.stringify(currentDriver));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_DRIVER);
+      }
+    } catch (e) {
+      console.warn('Storage sync failed', e);
+    }
+  }, [currentDriver]);
+
   // Sync to local storage
   useEffect(() => {
     try {
@@ -164,7 +191,8 @@ export default function App() {
   }, [chatMessages]);
 
   // Require Auth Trigger Helper
-  const handleRequireAuth = (afterAuthCallback?: () => void) => {
+  const handleRequireAuth = (mode: 'login' | 'register' = 'register', afterAuthCallback?: () => void) => {
+    setAuthModalMode(mode);
     if (afterAuthCallback) {
       authSuccessCallbackRef.current = afterAuthCallback;
     } else {
@@ -197,9 +225,20 @@ export default function App() {
     }
   };
 
+  // Driver Login & Logout Handlers
+  const handleLoginDriver = (driver: TaxiDriver) => {
+    setCurrentDriver(driver);
+    setActiveDriverId(driver.id);
+  };
+
+  const handleLogoutDriver = () => {
+    setCurrentDriver(null);
+  };
+
   // Driver Registration Handler (connects new driver to fleet)
   const handleRegisterDriver = (newDriver: TaxiDriver) => {
     setDrivers(prev => [newDriver, ...prev]);
+    setCurrentDriver(newDriver);
     setActiveDriverId(newDriver.id);
     setActiveTab('driver');
   };
@@ -483,18 +522,6 @@ export default function App() {
     }
   };
 
-  // Reset to initial demo data
-  const handleResetData = () => {
-    localStorage.removeItem(STORAGE_KEYS.DRIVERS);
-    localStorage.removeItem(STORAGE_KEYS.PARCELS);
-    localStorage.removeItem(STORAGE_KEYS.CHAT);
-    setDrivers(INITIAL_DRIVERS);
-    setDeliveries(INITIAL_PARCELS);
-    setChatMessages(INITIAL_CHAT);
-    setSelectedTrackingCode(INITIAL_PARCELS[0].trackingCode);
-    setActiveDriverId(INITIAL_DRIVERS[0].id);
-  };
-
   const activeDeliveriesCount = deliveries.filter(d => d.status !== 'delivered' && d.status !== 'cancelled').length;
 
   return (
@@ -504,10 +531,12 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeDeliveriesCount={activeDeliveriesCount}
-        onResetData={handleResetData}
         currentUser={currentSenderUser}
+        currentDriver={currentDriver}
         onLogoutSender={handleLogoutSender}
+        onLogoutDriver={handleLogoutDriver}
         onRequireAuth={handleRequireAuth}
+        onOpenDriverLogin={() => setIsDriverAuthModalOpen(true)}
         language={language}
         onSetLanguage={setLanguage}
         onOpenDriverRegister={() => setIsDriverRegisterModalOpen(true)}
@@ -564,15 +593,22 @@ export default function App() {
             selectedTrackingCode={selectedTrackingCode}
             onSelectTrackingCode={setSelectedTrackingCode}
             onOpenChat={(d) => setActiveChatDelivery(d)}
-            onAdvanceSimulation={handleAdvanceSimulation}
+            language={language}
           />
         )}
 
         {activeTab === 'driver' && (
           <DriverTerminalView
+            currentDriver={currentDriver}
             drivers={drivers}
             activeDriverId={activeDriverId}
-            onSelectDriver={setActiveDriverId}
+            onLoginDriver={handleLoginDriver}
+            onLogoutDriver={handleLogoutDriver}
+            onSelectDriver={(id) => {
+              setActiveDriverId(id);
+              const found = drivers.find(d => d.id === id);
+              if (found) setCurrentDriver(found);
+            }}
             deliveries={deliveries}
             onPublishTrip={handlePublishTrip}
             onUpdateDriverStatus={handleUpdateDriverStatus}
@@ -580,7 +616,6 @@ export default function App() {
             onOpenChat={(d) => setActiveChatDelivery(d)}
             language={language}
             onOpenDriverRegister={() => setIsDriverRegisterModalOpen(true)}
-            onLogoutDriver={() => setActiveDriverId(INITIAL_DRIVERS[0].id)}
           />
         )}
 
@@ -595,12 +630,29 @@ export default function App() {
         language={language}
       />
 
+      {/* Driver Login Modal */}
+      <DriverAuthModal
+        isOpen={isDriverAuthModalOpen}
+        onClose={() => setIsDriverAuthModalOpen(false)}
+        onLogin={(driver) => {
+          handleLoginDriver(driver);
+          setActiveTab('driver');
+        }}
+        onOpenRegister={() => {
+          setIsDriverAuthModalOpen(false);
+          setIsDriverRegisterModalOpen(true);
+        }}
+        drivers={drivers}
+        language={language}
+      />
+
       {/* Auth Modal triggered across app for senders */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onRegister={handleRegisterSender}
         onLogin={handleLoginSender}
+        initialMode={authModalMode}
         availableUsers={senderUsers}
         onSuccessCallback={() => {
           if (authSuccessCallbackRef.current) {
@@ -643,6 +695,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         activeDeliveriesCount={activeDeliveriesCount}
         currentUser={currentSenderUser}
+        currentDriver={currentDriver}
         onRequireAuth={handleRequireAuth}
         language={language}
       />

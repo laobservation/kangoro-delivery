@@ -779,14 +779,14 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       className="rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
                     />
                     <div className="text-xs">
-                      <span className="font-bold text-zinc-900 block">Fragile Item (+20 MAD)</span>
+                      <span className="font-bold text-zinc-900 block">Fragile Item (+20 DH)</span>
                       <span className="text-[10px] text-zinc-500">Secured in cushioned front compartment</span>
                     </div>
                   </label>
 
                   <div>
                     <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1">
-                      Declared Value (MAD)
+                      Declared Value (DH)
                     </label>
                     <input
                       type="number"
@@ -884,7 +884,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       className="mt-0.5 rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
                     />
                     <div className="text-xs">
-                      <span className="font-bold text-zinc-900 block">Origin Doorstep Pickup (+25 MAD)</span>
+                      <span className="font-bold text-zinc-900 block">Origin Doorstep Pickup (+25 DH)</span>
                       <span className="text-[10px] text-zinc-500">Driver picks up parcel at your doorstep in {originCity}</span>
                     </div>
                   </label>
@@ -897,7 +897,7 @@ export const SenderView: React.FC<SenderViewProps> = ({
                       className="mt-0.5 rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
                     />
                     <div className="text-xs">
-                      <span className="font-bold text-zinc-900 block">Destination Doorstep Dropoff (+25 MAD)</span>
+                      <span className="font-bold text-zinc-900 block">Destination Doorstep Dropoff (+25 DH)</span>
                       <span className="text-[10px] text-zinc-500">Driver delivers to recipient address in {destinationCity}</span>
                     </div>
                   </label>

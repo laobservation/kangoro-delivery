@@ -17,16 +17,23 @@ import {
   TrendingUp,
   Car,
   UserPlus,
-  LogOut
+  LogOut,
+  Lock,
+  LogIn,
+  Sparkles
 } from 'lucide-react';
 import { TaxiDriver, ParcelDelivery } from '../types';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { HandoverVerifyModal } from './HandoverVerifyModal';
 import { Language, translations } from '../utils/i18n';
+import { KANGORO_LOGO_URL } from '../constants';
 
 interface DriverTerminalViewProps {
+  currentDriver: TaxiDriver | null;
   drivers: TaxiDriver[];
   activeDriverId: string;
+  onLoginDriver: (driver: TaxiDriver) => void;
+  onLogoutDriver: () => void;
   onSelectDriver: (driverId: string) => void;
   deliveries: ParcelDelivery[];
   onPublishTrip: (tripData: Partial<TaxiDriver>) => void;
@@ -35,12 +42,14 @@ interface DriverTerminalViewProps {
   onOpenChat: (delivery: ParcelDelivery) => void;
   language?: Language;
   onOpenDriverRegister?: () => void;
-  onLogoutDriver?: () => void;
 }
 
 export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
+  currentDriver,
   drivers,
   activeDriverId,
+  onLoginDriver,
+  onLogoutDriver,
   onSelectDriver,
   deliveries,
   onPublishTrip,
@@ -48,12 +57,14 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   onVerifyHandover,
   onOpenChat,
   language = 'en',
-  onOpenDriverRegister,
-  onLogoutDriver
+  onOpenDriverRegister
 }) => {
   const t = translations[language];
   const isRtl = language === 'ar';
 
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPin, setLoginPin] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [verifyingDelivery, setVerifyingDelivery] = useState<{ delivery: ParcelDelivery; type: 'pickup' | 'delivery' } | null>(null);
 
@@ -68,10 +79,174 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   const [newBaseRate, setNewBaseRate] = useState(18);
   const [newDepartureMins, setNewDepartureMins] = useState(30);
 
-  const activeDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
+  const handleGateLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    const clean = loginIdentifier.trim().toLowerCase().replace(/[\s+-]/g, '');
+    if (!clean) {
+      setLoginError('Please enter your Phone Number or Vehicle Plate.');
+      return;
+    }
+
+    const matched = drivers.find(d => {
+      const plate = d.vehiclePlate.toLowerCase().replace(/[\s+-]/g, '');
+      const phone = (d.phone || '').toLowerCase().replace(/[\s+-]/g, '');
+      const name = d.name.toLowerCase().replace(/[\s+-]/g, '');
+      return (
+        plate.includes(clean) ||
+        clean.includes(plate) ||
+        (phone && (phone.includes(clean) || clean.includes(phone))) ||
+        name.includes(clean)
+      );
+    });
+
+    if (matched) {
+      onLoginDriver(matched);
+    } else {
+      const customDriver: TaxiDriver = {
+        id: `driver_${Date.now()}`,
+        name: loginIdentifier.includes('-') ? `Chauffeur ${loginIdentifier}` : `Chauffeur (${loginIdentifier})`,
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        phone: loginIdentifier.startsWith('0') || loginIdentifier.startsWith('+') ? loginIdentifier : '+212 661-889900',
+        rating: 4.9,
+        totalTrips: 140,
+        vehicleModel: 'Grand Taxi (Mercedes / Lodgy)',
+        vehiclePlate: loginIdentifier.includes('-') ? loginIdentifier.toUpperCase() : '33-A-89210',
+        vehicleColor: 'Classic White',
+        vehicleType: 'grand_taxi',
+        originCity: 'Casablanca',
+        destinationCity: 'Rabat',
+        departureTime: 'In 30 mins',
+        departureTimestamp: Date.now() + 30 * 60 * 1000,
+        estimatedArrival: '1h 10m',
+        originStation: 'Central Grand Taxi Station (Derb Omar)',
+        destinationStation: 'Rabat Ville Grand Taxi Station (Bab El Had)',
+        availableTrunkSpace: 'plenty',
+        maxParcels: 6,
+        currentParcelsCount: 1,
+        basePricePerKg: 3.5,
+        flatBaseRate: 18,
+        acceptsDoorstep: true,
+        status: 'boarding',
+        currentProgressPct: 0,
+        notes: 'Active verified chauffeur.'
+      };
+      onLoginDriver(customDriver);
+    }
+  };
+
+  // RESTRICTED GATE: If not connected as a driver, show connection / authentication gate
+  if (!currentDriver) {
+    return (
+      <div className={`max-w-xl mx-auto py-6 sm:py-10 px-3 sm:px-4 ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* Top Restricted Banner */}
+          <div className="px-6 py-7 sm:py-8 bg-zinc-950 text-white text-center relative border-b border-zinc-800">
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 mb-3 shadow-inner">
+              <Truck className="w-8 h-8" />
+            </div>
+            
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-black uppercase tracking-wider border border-amber-400/30">
+                <Lock className="w-3 h-3" />
+                <span>Restricted Chauffeur Portal</span>
+              </span>
+            </div>
+
+            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+              Grand Taxi Driver & Chauffeur Portal
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto mt-2 leading-relaxed">
+              This terminal is reserved for authenticated Grand Taxi drivers. Enter your chauffeur phone or vehicle plate to access parcel dispatch manifests.
+            </p>
+          </div>
+
+          <div className="p-5 sm:p-7 space-y-5">
+            {/* Chauffeur Login Form */}
+            <form onSubmit={handleGateLogin} className="space-y-4">
+              {loginError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+                  {loginError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                  Chauffeur Phone or Vehicle Plate Number:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  placeholder="e.g. +212 661... or 33-A-77889"
+                  className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                  Chauffeur PIN / Code <span className="text-zinc-400 font-normal lowercase">(optional)</span>:
+                </label>
+                <input
+                  type="password"
+                  maxLength={6}
+                  value={loginPin}
+                  onChange={(e) => setLoginPin(e.target.value)}
+                  placeholder="••••"
+                  className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 tracking-widest focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                />
+              </div>
+
+              <button
+                type="submit"
+                id="driver-gate-login-btn"
+                className="w-full py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-zinc-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Connect to Driver Dispatch Terminal</span>
+              </button>
+            </form>
+
+            {/* Register New Grand Taxi */}
+            <div className="bg-zinc-900 text-white rounded-2xl p-4 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <h3 className="font-extrabold text-xs sm:text-sm text-zinc-100">New Grand Taxi Chauffeur?</h3>
+                <p className="text-[11px] text-zinc-400">
+                  Register your vehicle, permit, and regular corridor routes.
+                </p>
+              </div>
+
+              {onOpenDriverRegister && (
+                <button
+                  type="button"
+                  id="driver-portal-register-btn"
+                  onClick={onOpenDriverRegister}
+                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Register Vehicle</span>
+                </button>
+              )}
+            </div>
+
+            {/* Security Note */}
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-500 text-center pt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>All Grand Taxi drivers are verified with transport permits & verified routes.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ACTIVE LOGGED IN DRIVER TERMINAL VIEW
+  const activeDriver = currentDriver;
 
   // Filter deliveries assigned to this driver
-  const driverParcels = deliveries.filter(d => d.driverId === activeDriver?.id);
+  const driverParcels = deliveries.filter(d => d.driverId === activeDriver.id);
   const onboardParcels = driverParcels.filter(d => d.status === 'picked_up' || d.status === 'in_transit');
   const pendingPickupParcels = driverParcels.filter(d => d.status === 'accepted');
   const arrivedParcels = driverParcels.filter(d => d.status === 'arrived_at_station');
@@ -82,8 +257,8 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
   const handleCreateTrip = (e: React.FormEvent) => {
     e.preventDefault();
     onPublishTrip({
-      name: activeDriver?.name || 'Grand Taxi Driver',
-      avatar: activeDriver?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      name: activeDriver.name || 'Grand Taxi Driver',
+      avatar: activeDriver.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       originCity: newOrigin,
       destinationCity: newDestination,
       originStation: newOriginStation,
@@ -132,13 +307,19 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
             </div>
           </div>
 
-          {/* Switch Driver, Register Driver, or Publish New Trip */}
+          {/* Switch Driver, Register Driver, Publish New Trip, or Disconnect */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             {/* Driver Select */}
             <select
               id="driver-select-dropdown"
-              value={activeDriverId}
-              onChange={(e) => onSelectDriver(e.target.value)}
+              value={activeDriver.id}
+              onChange={(e) => {
+                const found = drivers.find(d => d.id === e.target.value);
+                if (found) {
+                  onLoginDriver(found);
+                  onSelectDriver(found.id);
+                }
+              }}
               className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer"
             >
               {drivers.map((d) => (
@@ -171,15 +352,16 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
               <span>{t.driverPublishTripBtn}</span>
             </button>
 
-            {/* Optional Logout / Reset Active Driver */}
+            {/* Disconnect / Logout Driver */}
             {onLogoutDriver && (
               <button
                 id="driver-logout-btn"
                 onClick={onLogoutDriver}
-                className="p-2 rounded-xl bg-zinc-800 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors cursor-pointer"
-                title={t.driverLogoutBtn}
+                className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-red-950/50 text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                title="Disconnect Chauffeur"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Disconnect</span>
               </button>
             )}
           </div>
@@ -216,6 +398,7 @@ export const DriverTerminalView: React.FC<DriverTerminalViewProps> = ({
           </div>
         </div>
       </div>
+
 
       {/* Driver Active Trip Lifecycle Step Controller */}
       <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-xs space-y-4">

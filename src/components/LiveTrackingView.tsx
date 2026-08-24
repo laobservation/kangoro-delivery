@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Compass, 
   Search, 
   Package, 
   MapPin, 
@@ -11,22 +10,23 @@ import {
   QrCode, 
   Clock, 
   Truck, 
-  CheckCircle2, 
-  DollarSign, 
   Share2, 
   AlertCircle,
-  Play
+  ArrowRight,
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import { ParcelDelivery } from '../types';
 import { RouteVisualizer } from './RouteVisualizer';
 import { formatCurrency, formatDate, getStatusBadgeInfo } from '../utils/helpers';
+import { Language, translations } from '../utils/i18n';
 
 interface LiveTrackingViewProps {
   deliveries: ParcelDelivery[];
   selectedTrackingCode: string;
   onSelectTrackingCode: (code: string) => void;
   onOpenChat: (delivery: ParcelDelivery) => void;
-  onAdvanceSimulation: (deliveryId: string) => void;
+  language?: Language;
 }
 
 export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
@@ -34,28 +34,46 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
   selectedTrackingCode,
   onSelectTrackingCode,
   onOpenChat,
-  onAdvanceSimulation
+  language = 'en'
 }) => {
   const [searchInput, setSearchInput] = useState('');
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [copiedNotification, setCopiedNotification] = useState(false);
 
-  // Active tracked delivery
-  const currentDelivery = deliveries.find(
-    d => d.trackingCode.toLowerCase() === selectedTrackingCode.toLowerCase()
-  ) || deliveries[0];
+  const t = translations[language];
+
+  // Active tracked delivery (strictly matching the user-submitted tracking code or phone)
+  const currentDelivery = selectedTrackingCode
+    ? deliveries.find(
+        d => d.trackingCode.toLowerCase() === selectedTrackingCode.trim().toLowerCase() ||
+             d.receiverPhone.includes(selectedTrackingCode.trim()) ||
+             d.senderPhone.includes(selectedTrackingCode.trim())
+      )
+    : null;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchInput.trim()) return;
+    const query = searchInput.trim();
+    if (!query) return;
+
     const found = deliveries.find(
-      d => d.trackingCode.toLowerCase() === searchInput.trim().toLowerCase() ||
-           d.receiverPhone.includes(searchInput.trim()) ||
-           d.senderPhone.includes(searchInput.trim())
+      d => d.trackingCode.toLowerCase() === query.toLowerCase() ||
+           d.receiverPhone.includes(query) ||
+           d.senderPhone.includes(query)
     );
+
     if (found) {
+      setSearchError(null);
       onSelectTrackingCode(found.trackingCode);
-      setSearchInput('');
+    } else {
+      setSearchError(query);
     }
+  };
+
+  const handleClearTracking = () => {
+    onSelectTrackingCode('');
+    setSearchInput('');
+    setSearchError(null);
   };
 
   const badgeInfo = currentDelivery ? getStatusBadgeInfo(currentDelivery.status) : null;
@@ -72,60 +90,130 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Search & Active Selector Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search Input */}
-        <form onSubmit={handleSearch} className="w-full md:w-96 relative flex items-center">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5" />
-          <input
-            type="text"
-            placeholder="Search Waybill # (e.g. ICT-489102) or Phone..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-24 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="absolute right-1.5 px-3 py-1 bg-zinc-900 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 transition-colors"
-          >
-            Track
-          </button>
-        </form>
-
-        {/* Quick Shipment Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto no-scrollbar py-1">
-          <span className="text-xs font-semibold text-zinc-700 shrink-0">Active Shipments:</span>
-          {deliveries.slice(0, 4).map((d) => (
+      {/* Top Search Bar (when a parcel is already being tracked) */}
+      {currentDelivery ? (
+        <div className="bg-white rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <form onSubmit={handleSearch} className="w-full sm:w-96 relative flex items-center">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5" />
+            <input
+              type="text"
+              placeholder="Search other Waybill # (e.g. ICT-489102)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-20 py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none font-mono"
+            />
             <button
-              key={d.id}
-              onClick={() => onSelectTrackingCode(d.trackingCode)}
-              className={`text-xs px-3 py-1.5 rounded-xl font-mono font-bold transition-all shrink-0 cursor-pointer ${
-                currentDelivery?.trackingCode === d.trackingCode
-                  ? 'bg-amber-500 text-zinc-950 shadow-xs ring-2 ring-amber-400/30'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200'
-              }`}
+              type="submit"
+              className="absolute right-1.5 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:bg-zinc-800 transition-colors cursor-pointer"
             >
-              {d.trackingCode} ({d.originCity.slice(0, 3)} ➔ {d.destinationCity.slice(0, 3)})
+              Track
             </button>
-          ))}
-        </div>
-      </div>
+          </form>
 
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={handleClearTracking}
+              className="px-3.5 py-2 rounded-xl border border-zinc-300 hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Track Another Shipment
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Copy notification popup */}
       {copiedNotification && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl text-center font-semibold">
-          ✓ Waybill details & recipient OTP copied to clipboard! You can send it via SMS / WhatsApp.
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl text-center font-semibold animate-fade-in">
+          ✓ Waybill details & recipient OTP copied to clipboard! Ready to share via SMS / WhatsApp.
         </div>
       )}
 
+      {/* Search Error Alert */}
+      {searchError && !currentDelivery && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-start gap-3 text-xs">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold">No active shipment found matching "{searchError}"</div>
+            <p className="text-red-700">
+              Please double check the waybill code (e.g. ICT-489102) or phone number and try again.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* State A: No Code Submitted Yet -> Dedicated Search Portal */}
       {!currentDelivery ? (
-        <div className="bg-white rounded-2xl p-12 border border-zinc-200 text-center space-y-3">
-          <Package className="w-12 h-12 text-zinc-400 mx-auto" />
-          <h3 className="font-bold text-zinc-800">No active delivery selected</h3>
-          <p className="text-xs text-zinc-600">Please choose a shipment above or book a new parcel.</p>
+        <div className="max-w-2xl mx-auto my-8 bg-white rounded-3xl p-8 sm:p-12 border border-zinc-200 shadow-sm text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center mx-auto text-amber-900 shadow-inner">
+            <Package className="w-8 h-8 text-amber-600" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-200">
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              Real-Time Highway Radar
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
+              Track Your Grand Taxi Parcel
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 max-w-lg mx-auto leading-relaxed">
+              Enter your official Waybill code or phone number to view live highway progress, driver details, and delivery handover codes.
+            </p>
+          </div>
+
+          {/* Centered Search Form */}
+          <form onSubmit={handleSearch} className="max-w-md mx-auto relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-5 h-5 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                id="live-tracking-search-input"
+                type="text"
+                required
+                placeholder="Enter Waybill # (e.g. ICT-489102)"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 bg-zinc-50 border-2 border-zinc-300 rounded-2xl text-sm font-mono font-bold text-zinc-900 placeholder:font-sans placeholder:font-normal placeholder:text-zinc-400 focus:bg-white focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-500/20 transition-all"
+              />
+            </div>
+            <button
+              id="live-tracking-search-btn"
+              type="submit"
+              className="px-6 py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+            >
+              <span>Track</span>
+              <ArrowRight className="w-4 h-4 text-amber-400" />
+            </button>
+          </form>
+
+          {/* Quick info badges */}
+          <div className="pt-6 border-t border-zinc-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80">
+              <div className="font-bold text-xs text-zinc-900 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Live Highway Speed
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-0.5">Real-time GPS road tracking</p>
+            </div>
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80">
+              <div className="font-bold text-xs text-zinc-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                Dual-OTP Security
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-0.5">Protected pickup & handover</p>
+            </div>
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80">
+              <div className="font-bold text-xs text-zinc-900 flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-amber-600" />
+                Direct Driver Chat
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-0.5">Call or message anytime</p>
+            </div>
+          </div>
         </div>
       ) : (
+        /* State B: Code Submitted -> Show Highway Road Tracker & Full Waybill */
         <div className="space-y-6">
-          {/* Animated Route Visualizer */}
+          {/* Road Style Highway Visualizer */}
           <RouteVisualizer delivery={currentDelivery} />
 
           {/* Main Parcel Details Layout */}
@@ -152,7 +240,7 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleShareWaybill}
-                      className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl border border-zinc-200 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                      className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl border border-zinc-200 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                       title="Share Waybill"
                     >
                       <Share2 className="w-3.5 h-3.5" />
@@ -160,7 +248,7 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
                     </button>
                     <button
                       onClick={() => onOpenChat(currentDelivery)}
-                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
                       <span>Live Driver Chat</span>
@@ -235,21 +323,6 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
                   </div>
                 </div>
 
-                {/* Simulation Control (For test driving the app) */}
-                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-xs text-amber-950">
-                    <strong className="block font-bold">Demo Interactive Control</strong>
-                    <span>Simulate taxi trip progression, highway cruising, or destination arrival.</span>
-                  </div>
-                  <button
-                    onClick={() => onAdvanceSimulation(currentDelivery.id)}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-zinc-950" />
-                    <span>Advance Taxi Trip State</span>
-                  </button>
-                </div>
-
                 {/* Status Timeline History */}
                 <div className="space-y-3 pt-2">
                   <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -291,7 +364,7 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
                     {currentDelivery.pickupOtp}
                   </div>
                   <p className="text-[11px] text-indigo-900">
-                    Show or read this 4-digit code to driver {currentDelivery.driver?.name} at the departure station.
+                    Show or read this 4-digit code to driver {currentDelivery.driver?.name} at departure station.
                   </p>
                 </div>
 
@@ -352,7 +425,7 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({
                     </a>
                     <button
                       onClick={() => onOpenChat(currentDelivery)}
-                      className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
                       <span>Message</span>

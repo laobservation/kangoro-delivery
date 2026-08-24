@@ -2,7 +2,8 @@ import { ParcelSize, DeliveryStatus, CityRoute } from '../types';
 import { POPULAR_ROUTES } from '../data/mockData';
 
 export function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+  const rounded = Math.round(amount * 10) / 10;
+  return `${rounded % 1 === 0 ? rounded : rounded.toFixed(1)} DH`;
 }
 
 export function formatTime(timestamp: number): string {
