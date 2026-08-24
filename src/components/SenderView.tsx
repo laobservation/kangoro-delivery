@@ -102,6 +102,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
   const driversSectionRef = useRef<HTMLDivElement>(null);
   // Ref to city selector
   const citySelectorRef = useRef<HTMLDivElement>(null);
+  // Active city selector modal ('origin' -> 'destination' step sequence)
+  const [activeCityModal, setActiveCityModal] = useState<'origin' | 'destination' | null>(null);
 
   // Update sender info if currentUser changes
   useEffect(() => {
@@ -150,10 +152,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
       citySelectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     setTimeout(() => {
-      const trigger = document.getElementById('destination-city-selector-trigger');
-      trigger?.focus();
-      trigger?.click();
-    }, 350);
+      setActiveCityModal('origin');
+    }, 150);
   };
 
   const handleDispatchOnRoute = () => {
@@ -328,7 +328,15 @@ export const SenderView: React.FC<SenderViewProps> = ({
                 id="origin-city-selector"
                 type="origin"
                 value={originCity}
+                isOpen={activeCityModal === 'origin'}
+                onOpenChange={(open) => setActiveCityModal(open ? 'origin' : null)}
                 onChange={(val) => setOriginCity(val)}
+                onSelectAndNext={() => {
+                  // After selecting origin city, automatically switch to destination modal
+                  setTimeout(() => {
+                    setActiveCityModal('destination');
+                  }, 80);
+                }}
                 otherCity={destinationCity}
                 label={t.originCityLabel}
                 language={language}
@@ -359,7 +367,12 @@ export const SenderView: React.FC<SenderViewProps> = ({
                 id="destination-city-selector"
                 type="destination"
                 value={destinationCity}
-                onChange={(val) => setDestinationCity(val)}
+                isOpen={activeCityModal === 'destination'}
+                onOpenChange={(open) => setActiveCityModal(open ? 'destination' : null)}
+                onChange={(val) => {
+                  setDestinationCity(val);
+                  setActiveCityModal(null);
+                }}
                 otherCity={originCity}
                 label={t.destinationCityLabel}
                 language={language}

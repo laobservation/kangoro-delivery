@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-zinc-200 shadow-xs" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-2">
+        <div className="flex items-center justify-between h-20 gap-3">
           {/* Brand Logo - Official Kangoro Delivery */}
           <div 
             id="brand-logo-btn"
@@ -88,38 +88,38 @@ export const Navbar: React.FC<NavbarProps> = ({
               src={KANGORO_LOGO_URL}
               alt="KANGORO DELIVERY"
               referrerPolicy="no-referrer"
-              className="h-11 sm:h-13 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              className="h-13 sm:h-15 md:h-16 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             />
           </div>
 
-          {/* Center Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-2">
+          {/* Center Navigation Tabs (3 Primary Options: Send, Track, Hubs) */}
+          <nav className="hidden md:flex items-center gap-2.5 sm:gap-3">
             <button
               id="nav-send-tab"
               onClick={() => setActiveTab('send')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
+              className={`flex items-center gap-2 px-4.5 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
                 activeTab === 'send'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
-                  : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
+                  ? 'bg-zinc-100 text-zinc-950 font-extrabold border-2 border-zinc-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]'
+                  : 'bg-white text-zinc-700 font-bold border border-zinc-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-zinc-300 hover:text-zinc-950'
               }`}
             >
-              <Home className={`w-3.5 h-3.5 ${activeTab === 'send' ? 'text-amber-600 stroke-[2.4]' : 'text-zinc-500'}`} />
+              <Home className={`w-4.5 h-4.5 ${activeTab === 'send' ? 'text-amber-600 stroke-[2.6]' : 'text-zinc-500 stroke-[2.2]'}`} />
               <span>{t.navHomeSend}</span>
             </button>
 
             <button
               id="nav-track-tab"
               onClick={() => setActiveTab('track')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 relative cursor-pointer ${
+              className={`flex items-center gap-2 px-4.5 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm transition-all duration-200 relative cursor-pointer ${
                 activeTab === 'track'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
-                  : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
+                  ? 'bg-zinc-100 text-zinc-950 font-extrabold border-2 border-zinc-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]'
+                  : 'bg-white text-zinc-700 font-bold border border-zinc-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-zinc-300 hover:text-zinc-950'
               }`}
             >
-              <Compass className={`w-3.5 h-3.5 ${activeTab === 'track' ? 'text-amber-600 stroke-[2.4]' : 'text-zinc-500'}`} />
+              <Compass className={`w-4.5 h-4.5 ${activeTab === 'track' ? 'text-amber-600 stroke-[2.6]' : 'text-zinc-500 stroke-[2.2]'}`} />
               <span>{t.navLiveTracking}</span>
               {activeDeliveriesCount > 0 && (
-                <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-black text-amber-950 bg-amber-400 rounded-full animate-pulse shadow-xs">
+                <span className="inline-flex items-center justify-center w-5 h-5 text-[11px] font-black text-amber-950 bg-amber-400 rounded-full animate-pulse shadow-xs">
                   {activeDeliveriesCount}
                 </span>
               )}
@@ -130,34 +130,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="nav-driver-tab"
                 onClick={() => setActiveTab('driver')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-2 px-4.5 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
                   activeTab === 'driver'
-                    ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]'
-                    : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
+                    ? 'bg-amber-100 text-amber-950 font-extrabold border-2 border-amber-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'bg-white text-zinc-700 font-bold border border-zinc-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-zinc-300 hover:text-zinc-950'
                 }`}
               >
-                <Truck className={`w-3.5 h-3.5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.4]' : 'text-zinc-500'}`} />
+                <Truck className={`w-4.5 h-4.5 ${activeTab === 'driver' ? 'text-amber-700 stroke-[2.6]' : 'text-zinc-500 stroke-[2.2]'}`} />
                 <span>{t.navDriverTerminal}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </button>
             )}
 
             <button
               id="nav-stations-tab"
               onClick={() => setActiveTab('stations')}
-              className={`hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all duration-200 cursor-pointer ${
+              className={`flex items-center gap-2 px-4.5 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
                 activeTab === 'stations'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold border border-zinc-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
-                  : 'bg-white text-zinc-700 font-semibold border border-zinc-200/90 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.08)] hover:border-zinc-300'
+                  ? 'bg-zinc-100 text-zinc-950 font-extrabold border-2 border-zinc-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]'
+                  : 'bg-white text-zinc-700 font-bold border border-zinc-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-zinc-300 hover:text-zinc-950'
               }`}
             >
-              <Building2 className={`w-3.5 h-3.5 ${activeTab === 'stations' ? 'text-amber-600 stroke-[2.4]' : 'text-zinc-500'}`} />
+              <Building2 className={`w-4.5 h-4.5 ${activeTab === 'stations' ? 'text-amber-600 stroke-[2.6]' : 'text-zinc-500 stroke-[2.2]'}`} />
               <span>{t.navTaxiHubs}</span>
             </button>
           </nav>
 
           {/* Right Action Bar: Minimal Letters Language Switcher, Driver Access, Auth & Logout */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             
             {/* Language Dropdown Selector (Shows ONLY selected language; dropdown on click) */}
             <div className="relative" ref={langMenuRef}>
@@ -167,14 +167,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setIsLangMenuOpen(!isLangMenuOpen);
                   setIsUserMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white hover:bg-zinc-50 border border-zinc-200/90 text-xs font-black text-zinc-900 shadow-[0_2px_6px_rgba(0,0,0,0.05)] hover:border-zinc-300 transition-all cursor-pointer min-h-[40px]"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-white hover:bg-zinc-50 border border-zinc-200/90 text-xs sm:text-sm font-black text-zinc-900 shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:border-zinc-300 transition-all cursor-pointer min-h-[44px]"
                 title={t.changeLanguage}
                 aria-label={t.changeLanguage}
                 aria-expanded={isLangMenuOpen}
               >
-                <Globe className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="text-xs font-extrabold tracking-wide">{currentLangOption.label}</span>
-                <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180 text-zinc-700' : ''}`} />
+                <Globe className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-xs sm:text-sm font-extrabold tracking-wide">{currentLangOption.label}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180 text-zinc-700' : ''}`} />
               </button>
 
               {isLangMenuOpen && (
@@ -213,10 +213,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Chauffeur Connection State or Login Trigger - Pure Icon Button */}
             {currentDriver ? (
-              <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-300/80 p-1 rounded-full shadow-xs">
+              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-300/80 p-1 rounded-full shadow-xs">
                 <button
                   onClick={() => setActiveTab('driver')}
-                  className="w-8 h-8 rounded-full overflow-hidden border border-amber-400 shrink-0 cursor-pointer"
+                  className="w-9 h-9 rounded-full overflow-hidden border border-amber-400 shrink-0 cursor-pointer"
                   title={`Chauffeur: ${currentDriver.name}`}
                   aria-label={`Chauffeur: ${currentDriver.name}`}
                 >
@@ -234,20 +234,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   title="Disconnect Chauffeur"
                   aria-label="Disconnect Chauffeur"
-                  className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                  className="p-2 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <button
                 id="nav-open-driver-login-btn"
                 onClick={onOpenDriverLogin}
-                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-white hover:bg-amber-50 text-amber-600 border border-amber-300/90 shadow-[0_2px_6px_rgba(245,158,11,0.12)] hover:shadow-[0_4px_10px_rgba(245,158,11,0.2)] flex items-center justify-center transition-all cursor-pointer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white hover:bg-amber-50 text-amber-600 border border-amber-300/90 shadow-[0_2px_8px_rgba(245,158,11,0.15)] hover:shadow-[0_4px_12px_rgba(245,158,11,0.25)] flex items-center justify-center transition-all cursor-pointer"
                 title="Chauffeur Terminal"
                 aria-label="Chauffeur Terminal"
               >
-                <Truck className="w-5 h-5 text-amber-600" />
+                <Truck className="w-5.5 h-5.5 text-amber-600" />
               </button>
             )}
 
@@ -257,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button 
                   id="nav-user-profile-badge"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full overflow-hidden border-2 border-amber-400 shadow-xs hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer flex items-center justify-center"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full overflow-hidden border-2 border-amber-400 shadow-xs hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer flex items-center justify-center"
                   title={`${t.navConnectedAs} ${currentUser.name}`}
                   aria-label={`${t.navConnectedAs} ${currentUser.name}`}
                 >
@@ -313,11 +313,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => {
                   if (onRequireAuth) onRequireAuth();
                 }}
-                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-zinc-950 hover:bg-zinc-800 text-amber-400 shadow-[0_2px_6px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all cursor-pointer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-zinc-950 hover:bg-zinc-800 text-amber-400 shadow-[0_2px_8px_rgba(0,0,0,0.18)] flex items-center justify-center transition-all cursor-pointer"
                 title={t.navConnectSender}
                 aria-label={t.navConnectSender}
               >
-                <User className="w-5 h-5 text-amber-400" />
+                <User className="w-5.5 h-5.5 text-amber-400" />
               </button>
             )}
           </div>

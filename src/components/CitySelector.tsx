@@ -114,6 +114,9 @@ interface CitySelectorProps {
   label: string;
   language: Language;
   disabled?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSelectAndNext?: (cityName: string) => void;
 }
 
 export const CitySelector: React.FC<CitySelectorProps> = ({
@@ -123,14 +126,28 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
   onChange,
   label,
   language,
-  disabled = false
+  disabled = false,
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  onSelectAndNext
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const isRtl = language === 'ar';
+  const isControlled = typeof controlledIsOpen === 'boolean';
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
+  const setIsOpen = (nextOpen: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(nextOpen);
+    }
+    if (!isControlled) {
+      setInternalIsOpen(nextOpen);
+    }
+  };
+
+  const isRtl = language === 'ar';
   const normalizedVal = normalizeCityName(value);
 
   // Find currently selected city metadata or create a sensible fallback
@@ -180,6 +197,14 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
   });
 
   const isOrigin = type === 'origin';
+
+  const handleSelectCity = (cityName: string) => {
+    onChange(cityName);
+    setIsOpen(false);
+    if (onSelectAndNext) {
+      onSelectAndNext(cityName);
+    }
+  };
 
   return (
     <div className="relative w-full">
@@ -261,12 +286,18 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-zinc-950">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                      isOrigin ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                    }`}>
+                      {isOrigin 
+                        ? (language === 'ar' ? 'الخطوة 1: نقطة الانطلاق' : language === 'fr' ? 'Étape 1: Ville de départ' : 'Step 1: Origin City') 
+                        : (language === 'ar' ? 'الخطوة 2: وجهة الوصول' : language === 'fr' ? 'Étape 2: Ville d\'arrivée' : 'Step 2: Destination City')}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-extrabold text-zinc-950 mt-0.5">
                     {label}
                   </h3>
-                  <p className="text-[11px] text-zinc-500 font-medium">
-                    {language === 'ar' ? 'اختر المدينة لنقل الطرود' : language === 'fr' ? 'Sélectionnez la ville' : 'Select Grand Taxi city'}
-                  </p>
                 </div>
               </div>
 
@@ -322,10 +353,7 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
                     <button
                       key={city.name}
                       type="button"
-                      onClick={() => {
-                        onChange(city.name);
-                        setIsOpen(false);
-                      }}
+                      onClick={() => handleSelectCity(city.name)}
                       className={`w-full h-[64px] min-h-[64px] flex items-center justify-between p-3 rounded-2xl transition-all cursor-pointer text-left overflow-hidden ${
                         isSelected
                           ? 'bg-amber-50 border-2 border-amber-400 ring-2 ring-amber-300/40 text-zinc-950 shadow-xs'
