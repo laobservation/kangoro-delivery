@@ -8,12 +8,11 @@ import {
   CheckCircle, 
   ShieldCheck, 
   Lock,
-  LogIn,
-  ArrowRight,
-  Sparkles
+  LogIn
 } from 'lucide-react';
 import { SenderUser } from '../types';
 import { KANGORO_LOGO_URL } from '../constants';
+import { Language } from '../utils/i18n';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -23,6 +22,7 @@ interface AuthModalProps {
   availableUsers: SenderUser[];
   initialMode?: 'register' | 'login';
   onSuccessCallback?: () => void;
+  language?: Language;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -32,8 +32,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLogin,
   availableUsers,
   initialMode = 'register',
-  onSuccessCallback
+  onSuccessCallback,
+  language = 'fr'
 }) => {
+  const isRtl = language === 'ar';
   const [authMode, setAuthMode] = useState<'register' | 'login'>(initialMode);
 
   // Register form state
@@ -52,11 +54,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Please enter your name');
+      setError(isRtl ? 'يرجى إدخال اسمك الكامل' : 'Veuillez saisir votre nom complet');
       return;
     }
     if (!phone.trim()) {
-      setError('Please enter your phone number');
+      setError(isRtl ? 'يرجى إدخال رقم الهاتف' : 'Veuillez saisir votre numéro de téléphone');
       return;
     }
 
@@ -67,7 +69,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       email: email.trim() || undefined,
       city,
       accountType,
-      joinedDate: 'Today'
+      joinedDate: isRtl ? 'اليوم' : 'Aujourd’hui'
     };
 
     onRegister(newUser);
@@ -78,7 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginPhone.trim()) {
-      setError('Please enter your phone number to log in');
+      setError(isRtl ? 'يرجى إدخال رقم الهاتف' : 'Veuillez saisir votre numéro de téléphone');
       return;
     }
 
@@ -88,14 +90,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (matched) {
       onLogin(matched);
     } else {
-      // Create user session with this phone
       const connectedUser: SenderUser = {
         id: `user-${Date.now()}`,
-        name: `Sender (${loginPhone.slice(-4) || 'User'})`,
+        name: isRtl ? `مرسل (${loginPhone.slice(-4) || 'مستخدم'})` : `Expéditeur (${loginPhone.slice(-4) || 'Client'})`,
         phone: loginPhone.trim(),
         city: 'Casablanca',
         accountType: 'individual',
-        joinedDate: 'Today'
+        joinedDate: isRtl ? 'اليوم' : 'Aujourd’hui'
       };
       onRegister(connectedUser);
     }
@@ -104,14 +105,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   };
 
-  const handleDirectSelectUser = (user: SenderUser) => {
-    onLogin(user);
-    if (onSuccessCallback) onSuccessCallback();
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/75 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/75 backdrop-blur-xs overflow-y-auto" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
@@ -127,13 +122,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight flex items-center gap-1.5">
-                <span>{authMode === 'register' ? 'Create Account' : 'Account Login'}</span>
+                <span>
+                  {authMode === 'register' 
+                    ? (isRtl ? 'إنشاء حساب جديد' : 'Créer un Compte') 
+                    : (isRtl ? 'تسجيل الدخول' : 'Connexion')}
+                </span>
                 <span className="p-0.5 rounded-full bg-amber-400/20 text-amber-300">
                   <Lock className="w-3 h-3" />
                 </span>
               </h2>
               <p className="text-[11px] text-zinc-400 leading-tight">
-                {authMode === 'register' ? 'Register in 30 seconds' : 'Access your sender orders & tracking'}
+                {authMode === 'register' 
+                  ? (isRtl ? 'سجل في 30 ثانية وابدأ الإرسال' : 'Inscription en 30 secondes') 
+                  : (isRtl ? 'متابعة طرودك وإدارتها' : 'Accédez à vos commandes et suivis')}
               </p>
             </div>
           </div>
@@ -141,13 +142,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={onClose}
             className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-            aria-label="Close"
+            aria-label="Fermer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 2 Clear Options Toggle: Create Account | Login */}
+        {/* 2 Clear Options Toggle */}
         <div className="p-3 bg-zinc-50 border-b border-zinc-200 flex items-center gap-2 shrink-0">
           <button
             type="button"
@@ -160,7 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5 text-amber-500" />
-            <span>Create Account</span>
+            <span>{isRtl ? 'إنشاء حساب' : 'Nouveau Compte'}</span>
           </button>
 
           <button
@@ -174,7 +175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             <LogIn className="w-3.5 h-3.5 text-amber-500" />
-            <span>Login</span>
+            <span>{isRtl ? 'دخول' : 'Connexion'}</span>
           </button>
         </div>
 
@@ -192,17 +193,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Full Name */}
               <div>
                 <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">
-                  Full Name / Business *
+                  {isRtl ? 'الاسم الكامل أو النشاط *' : 'Nom Complet / Société *'}
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <User className={`w-4 h-4 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Amine Benjelloun"
-                    className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                    placeholder={isRtl ? 'مثال: أمين التازي' : 'Ex: Amine Benjelloun'}
+                    className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                   />
                 </div>
               </div>
@@ -211,40 +212,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">
-                    Mobile Phone *
+                    {isRtl ? 'رقم الهاتف *' : 'Téléphone Mobile *'}
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <Phone className={`w-4 h-4 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
                     <input
                       type="tel"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+212 6..."
-                      className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                      className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">
-                    Base City *
+                    {isRtl ? 'المدينة *' : 'Ville *'}
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <MapPin className={`w-4 h-4 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
                     <select
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden cursor-pointer"
+                      className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden cursor-pointer`}
                     >
-                      <option value="Casablanca">Casablanca</option>
-                      <option value="Rabat">Rabat</option>
-                      <option value="Marrakech">Marrakech</option>
-                      <option value="Tangier">Tangier</option>
-                      <option value="Fes">Fes</option>
-                      <option value="Agadir">Agadir</option>
-                      <option value="Meknes">Meknes</option>
-                      <option value="Oujda">Oujda</option>
+                      <option value="Casablanca">{isRtl ? 'الدار البيضاء' : 'Casablanca'}</option>
+                      <option value="Rabat">{isRtl ? 'الرباط' : 'Rabat'}</option>
+                      <option value="Marrakech">{isRtl ? 'مراكش' : 'Marrakech'}</option>
+                      <option value="Tangier">{isRtl ? 'طنجة' : 'Tanger'}</option>
+                      <option value="Fes">{isRtl ? 'فاس' : 'Fès'}</option>
+                      <option value="Agadir">{isRtl ? 'أكادير' : 'Agadir'}</option>
+                      <option value="Meknes">{isRtl ? 'مكناس' : 'Meknès'}</option>
+                      <option value="Oujda">{isRtl ? 'وجدة' : 'Oujda'}</option>
                     </select>
                   </div>
                 </div>
@@ -253,16 +254,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Email */}
               <div>
                 <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">
-                  Email (Optional)
+                  {isRtl ? 'البريد الإلكتروني (اختياري)' : 'Email (Optionnel)'}
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <Mail className={`w-4 h-4 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="amine@example.com"
-                    className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                    className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                   />
                 </div>
               </div>
@@ -270,13 +271,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Account Type */}
               <div>
                 <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1.5">
-                  Account Type
+                  {isRtl ? 'نوع الحساب' : 'Type de Compte'}
                 </label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: 'individual', label: 'Individual', icon: '👤' },
-                    { id: 'business', label: 'Business', icon: '🏢' },
-                    { id: 'e_commerce', label: 'E-Com', icon: '🛍️' }
+                    { id: 'individual', label: isRtl ? 'فرد' : 'Particulier', icon: '👤' },
+                    { id: 'business', label: isRtl ? 'شركة' : 'Société', icon: '🏢' },
+                    { id: 'e_commerce', label: isRtl ? 'تجارة إلكترونية' : 'E-Com', icon: '🛍️' }
                   ].map(t => (
                     <button
                       key={t.id}
@@ -303,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full py-2.5 sm:py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-zinc-950 font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4 text-zinc-950" />
-                  <span>Create Account</span>
+                  <span>{isRtl ? 'تأكيد الحساب' : 'Créer le Compte'}</span>
                 </button>
               </div>
             </form>
@@ -313,17 +314,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <form onSubmit={handleLoginSubmit} className="space-y-3">
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1">
-                    Enter Phone Number (+212)
+                    {isRtl ? 'أدخل رقم الهاتف (+212)' : 'Numéro de Téléphone (+212)'}
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <Phone className={`w-4 h-4 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-zinc-400`} />
                     <input
                       type="tel"
                       required
                       value={loginPhone}
                       onChange={(e) => setLoginPhone(e.target.value)}
                       placeholder="+212 6..."
-                      className="w-full pl-9 pr-3 py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                      className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                     />
                   </div>
                 </div>
@@ -334,7 +335,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-zinc-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Log In to Account</span>
+                  <span>{isRtl ? 'تسجيل الدخول' : 'Se Connecter'}</span>
                 </button>
               </form>
             </div>
@@ -343,7 +344,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Security note */}
           <div className="pt-2 flex items-center justify-center gap-1.5 text-[10px] text-zinc-500 text-center border-t border-zinc-100">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Dual-OTP verification keys are securely dispatched for all shipments.</span>
+            <span>{isRtl ? 'أمان فائق برموز التحقق المزدوجة OTP لجميع الشحنات.' : 'Sécurité garantie par double code OTP sur tous les envois.'}</span>
           </div>
         </div>
 
@@ -351,4 +352,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
-

@@ -21,6 +21,28 @@ export interface LocationPoint {
   lng?: number;
 }
 
+export type StationPresenceStatus = 'in_station' | 'out_of_station';
+
+export interface TaxiStation {
+  id: string;
+  city: string;
+  name: string;
+  nameAr?: string;
+  nameFr?: string;
+  address: string;
+  addressAr?: string;
+  phone: string;
+  hours: string;
+  hoursAr?: string;
+  lines: string[];
+  linesAr?: string[];
+  parcelDropBay: string;
+  parcelDropBayAr?: string;
+  image?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface TaxiDriver {
   id: string;
   name: string;
@@ -39,6 +61,11 @@ export interface TaxiDriver {
   estimatedArrival: string;
   originStation: string;
   destinationStation: string;
+  currentStationId?: string;
+  isAtStation?: boolean; // true = in station, false = out of station
+  stationPresence?: StationPresenceStatus;
+  stationBay?: string; // e.g. "Quai 3 - Emplacement A2" / "الرصيف 3"
+  outOfStationLocation?: string; // e.g. "Sur l'Autoroute A1 (vers Rabat)"
   availableTrunkSpace: 'plenty' | 'medium' | 'limited';
   maxParcels: number;
   currentParcelsCount: number;

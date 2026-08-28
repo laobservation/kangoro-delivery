@@ -31,16 +31,16 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
-  // Language Support (English, French, Arabic)
+  // Language Support (French and Arabic only)
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const savedLang = localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language;
-      if (savedLang && (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar')) {
+      if (savedLang && (savedLang === 'fr' || savedLang === 'ar')) {
         return savedLang;
       }
-      return 'en';
+      return 'fr';
     } catch {
-      return 'en';
+      return 'fr';
     }
   });
 
@@ -619,7 +619,23 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'stations' && <StationsDirectoryView />}
+        {activeTab === 'stations' && (
+          <StationsDirectoryView 
+            drivers={drivers}
+            language={language}
+            onSelectDriverForBooking={(driver) => {
+              setPrefillParcelData({
+                originCity: driver.originCity,
+                destinationCity: driver.destinationCity,
+                originStation: driver.originStation,
+                destinationStation: driver.destinationStation,
+                driverId: driver.id,
+                driver: driver
+              });
+              setActiveTab('send');
+            }}
+          />
+        )}
       </main>
 
       {/* Driver Registration Modal */}
@@ -654,6 +670,7 @@ export default function App() {
         onLogin={handleLoginSender}
         initialMode={authModalMode}
         availableUsers={senderUsers}
+        language={language}
         onSuccessCallback={() => {
           if (authSuccessCallbackRef.current) {
             const cb = authSuccessCallbackRef.current;
@@ -670,6 +687,7 @@ export default function App() {
           messages={chatMessages[activeChatDelivery.id] || []}
           onSendMessage={handleSendMessage}
           onClose={() => setActiveChatDelivery(null)}
+          language={language}
         />
       )}
 

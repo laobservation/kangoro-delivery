@@ -32,6 +32,7 @@ import {
 } from '../utils/helpers';
 import { Language, translations } from '../utils/i18n';
 import { CitySelector } from './CitySelector';
+import { TaxiRouteTransition } from './TaxiRouteTransition';
 
 interface SenderViewProps {
   drivers: TaxiDriver[];
@@ -102,8 +103,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
   const driversSectionRef = useRef<HTMLDivElement>(null);
   // Ref to city selector
   const citySelectorRef = useRef<HTMLDivElement>(null);
-  // Active city selector modal ('origin' -> 'destination' step sequence)
-  const [activeCityModal, setActiveCityModal] = useState<'origin' | 'destination' | null>(null);
+  // Active city selector modal ('origin' -> 'transition' -> 'destination' step sequence)
+  const [activeCityModal, setActiveCityModal] = useState<'origin' | 'transition' | 'destination' | null>(null);
 
   // Update sender info if currentUser changes
   useEffect(() => {
@@ -332,10 +333,8 @@ export const SenderView: React.FC<SenderViewProps> = ({
                 onOpenChange={(open) => setActiveCityModal(open ? 'origin' : null)}
                 onChange={(val) => setOriginCity(val)}
                 onSelectAndNext={() => {
-                  // After selecting origin city, automatically switch to destination modal
-                  setTimeout(() => {
-                    setActiveCityModal('destination');
-                  }, 80);
+                  // After selecting origin city, play delightful Grand Taxi transition animation
+                  setActiveCityModal('transition');
                 }}
                 otherCity={destinationCity}
                 label={t.originCityLabel}
@@ -373,11 +372,25 @@ export const SenderView: React.FC<SenderViewProps> = ({
                   setDestinationCity(val);
                   setActiveCityModal(null);
                 }}
+                onBackToOrigin={() => {
+                  setActiveCityModal('origin');
+                }}
                 otherCity={originCity}
                 label={t.destinationCityLabel}
                 language={language}
               />
             </div>
+
+            {/* Animated Inter-City Grand Taxi Transition Modal */}
+            {activeCityModal === 'transition' && (
+              <TaxiRouteTransition
+                originCity={originCity}
+                language={language}
+                onComplete={() => {
+                  setActiveCityModal('destination');
+                }}
+              />
+            )}
 
             {/* Start on Route CTA Button */}
             <div className="md:col-span-3 pt-2 md:pt-4">
@@ -559,12 +572,33 @@ export const SenderView: React.FC<SenderViewProps> = ({
 
                     {/* Schedule & Stations */}
                     <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200/80 space-y-2 text-xs mb-3">
+                      {/* Live Station Presence Badge */}
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60">
+                        {driver.isAtStation ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 text-[11px] font-bold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>{language === 'ar' ? 'داخل المحطة' : 'À la station'}</span>
+                            {driver.stationBay && <span className="font-normal text-emerald-800">({driver.stationBay})</span>}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span>{language === 'ar' ? 'خارج المحطة / في الطريق' : 'Hors station / En transit'}</span>
+                          </span>
+                        )}
+                        {driver.outOfStationLocation && !driver.isAtStation && (
+                          <span className="text-[10px] text-amber-800 truncate max-w-[140px] font-medium" title={driver.outOfStationLocation}>
+                            {driver.outOfStationLocation}
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex items-center justify-between text-zinc-700">
                         <span className="flex items-center gap-1.5 font-bold text-emerald-700">
-                          <Clock className="w-3.5 h-3.5" /> Departure: {driver.departureTime}
+                          <Clock className="w-3.5 h-3.5" /> {language === 'ar' ? 'الانطلاق :' : 'Départ :'} {driver.departureTime}
                         </span>
                         <span className="text-zinc-600 font-medium">
-                          Est. Arrival: <strong>{driver.estimatedArrival}</strong>
+                          {language === 'ar' ? 'الوصول التقديري :' : 'Arrivée :'} <strong>{driver.estimatedArrival}</strong>
                         </span>
                       </div>
 

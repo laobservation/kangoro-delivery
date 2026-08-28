@@ -11,7 +11,7 @@ import {
   FileText
 } from 'lucide-react';
 import { TaxiDriver } from '../types';
-import { Language, translations } from '../utils/i18n';
+import { Language } from '../utils/i18n';
 
 interface DriverAuthModalProps {
   isOpen: boolean;
@@ -28,9 +28,8 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
   onLogin,
   onOpenRegister,
   drivers,
-  language = 'en'
+  language = 'fr'
 }) => {
-  const t = translations[language];
   const isRtl = language === 'ar';
 
   const [identifier, setIdentifier] = useState('');
@@ -46,11 +45,10 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
 
     const cleanInput = identifier.trim().toLowerCase().replace(/[\s+-]/g, '');
     if (!cleanInput) {
-      setError('Please enter your Phone Number or Vehicle Plate.');
+      setError(isRtl ? 'يرجى إدخال رقم الهاتف أو لوحة الطاكسي' : 'Veuillez saisir votre téléphone ou immatriculation taxi');
       return;
     }
 
-    // Match existing registered driver by phone or license plate
     const matched = drivers.find(d => {
       const plate = d.vehiclePlate.toLowerCase().replace(/[\s+-]/g, '');
       const phone = (d.phone || '').toLowerCase().replace(/[\s+-]/g, '');
@@ -71,25 +69,26 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
         onClose();
       }, 500);
     } else {
-      // If driver is not in preloaded array, automatically create an authenticated chauffeur session
       const fallbackDriver: TaxiDriver = {
         id: `driver_custom_${Date.now()}`,
-        name: identifier.includes('-') ? `Chauffeur ${identifier}` : `Chauffeur (${identifier})`,
+        name: isRtl 
+          ? (identifier.includes('-') ? `سائق طاكسي ${identifier}` : `سائق (${identifier})`)
+          : (identifier.includes('-') ? `Chauffeur ${identifier}` : `Chauffeur (${identifier})`),
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
         phone: identifier.startsWith('0') || identifier.startsWith('+') ? identifier : '+212 661-889900',
         rating: 4.9,
         totalTrips: 142,
         vehicleModel: 'Grand Taxi (Mercedes / Lodgy)',
         vehiclePlate: identifier.includes('-') ? identifier.toUpperCase() : '33-A-89210',
-        vehicleColor: 'Classic White',
+        vehicleColor: 'Blanc',
         vehicleType: 'grand_taxi',
         originCity: 'Casablanca',
         destinationCity: 'Rabat',
-        departureTime: 'In 30 mins',
+        departureTime: isRtl ? 'خلال 30 دقيقة' : 'Dans 30 min',
         departureTimestamp: Date.now() + 30 * 60 * 1000,
         estimatedArrival: '1h 10m',
-        originStation: 'Central Grand Taxi Station (Derb Omar)',
-        destinationStation: 'Rabat Ville Grand Taxi Station (Bab El Had)',
+        originStation: isRtl ? 'محطة درب عمر' : 'Station Derb Omar',
+        destinationStation: isRtl ? 'محطة باب الأحد' : 'Station Bab El Had',
         availableTrunkSpace: 'plenty',
         maxParcels: 6,
         currentParcelsCount: 1,
@@ -98,7 +97,7 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
         acceptsDoorstep: true,
         status: 'boarding',
         currentProgressPct: 0,
-        notes: 'Active verified chauffeur.'
+        notes: isRtl ? 'سائق طاكسي معتمد' : 'Chauffeur Grand Taxi vérifié.'
       };
 
       setSuccess(true);
@@ -124,8 +123,8 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
         <div className="bg-zinc-950 text-white px-6 py-6 border-b border-zinc-800 relative">
           <button
             onClick={onClose}
-            aria-label="Close"
-            className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors cursor-pointer"
+            aria-label="Fermer"
+            className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors cursor-pointer`}
           >
             <X className="w-4 h-4" />
           </button>
@@ -137,11 +136,11 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full">
-                  Chauffeur Access
+                  {isRtl ? 'فضاء السائقين' : 'Espace Chauffeur'}
                 </span>
               </div>
               <h2 className="text-lg font-black text-white tracking-tight mt-0.5">
-                Grand Taxi Driver Portal
+                {isRtl ? 'لوحة تحكم سائق الطاكسي' : 'Terminal Chauffeur Grand Taxi'}
               </h2>
             </div>
           </div>
@@ -155,10 +154,10 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <h3 className="font-extrabold text-zinc-900 text-base">
-                Chauffeur Authenticated
+                {isRtl ? 'تم تسجيل دخول السائق بنجاح' : 'Chauffeur Connecté'}
               </h3>
               <p className="text-xs text-zinc-500">
-                Connecting to your Grand Taxi dispatch terminal...
+                {isRtl ? 'جاري تحويلك للوحة التحكم...' : 'Accès au terminal de dispatch...'}
               </p>
             </div>
           ) : (
@@ -173,38 +172,38 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
               {/* Phone or License Plate Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
-                  Chauffeur Phone or Vehicle Plate Number
+                  {isRtl ? 'رقم الهاتف أو لوحة ترقيم الطاكسي' : 'Téléphone ou Immatriculation Taxi'}
                 </label>
                 <div className="relative">
-                  <FileText className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <FileText className={`w-4 h-4 text-zinc-400 absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2`} />
                   <input
                     type="text"
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="e.g. +212 6... or 33-A-77889"
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                    placeholder={isRtl ? 'مثال: 06... أو 33-أ-77889' : 'Ex: +212 6... ou 33-A-77889'}
+                    className={`w-full ${isRtl ? 'pr-10 pl-3.5' : 'pl-10 pr-3.5'} py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                   />
                 </div>
                 <span className="text-[11px] text-zinc-400">
-                  Enter your registered phone number or Moroccan taxi plate number.
+                  {isRtl ? 'أدخل رقم هاتفك أو رقم مأذونية/لوحة الطاكسي' : 'Entrez votre numéro de téléphone ou immatriculation'}
                 </span>
               </div>
 
               {/* PIN Code */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
-                  Chauffeur PIN / Security Code <span className="text-zinc-400 font-normal lowercase">(optional)</span>
+                  {isRtl ? 'رمز المرور السري' : 'Code PIN Chauffeur'} <span className="text-zinc-400 font-normal lowercase">{isRtl ? '(اختياري)' : '(optionnel)'}</span>
                 </label>
                 <div className="relative">
-                  <KeyRound className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <KeyRound className={`w-4 h-4 text-zinc-400 absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2`} />
                   <input
                     type="password"
                     maxLength={6}
                     value={pinCode}
                     onChange={(e) => setPinCode(e.target.value)}
                     placeholder="••••"
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 tracking-widest focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden"
+                    className={`w-full ${isRtl ? 'pr-10 pl-3.5' : 'pl-10 pr-3.5'} py-2.5 bg-zinc-50 border border-zinc-300 rounded-xl text-xs sm:text-sm font-semibold text-zinc-900 tracking-widest focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:bg-white focus:outline-hidden`}
                   />
                 </div>
               </div>
@@ -216,13 +215,13 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
                 className="w-full py-3 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-zinc-950 font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Connect to Driver Dispatch</span>
+                <span>{isRtl ? 'دخول لوحة السائق' : 'Accéder au Terminal'}</span>
               </button>
 
               {/* Divider & Register Option */}
               <div className="pt-3 border-t border-zinc-100 flex flex-col items-center gap-2">
                 <div className="text-xs text-zinc-500 text-center">
-                  New Grand Taxi Chauffeur on the corridor?
+                  {isRtl ? 'هل أنت سائق طاكسي جديد وتريد الانضمام؟' : 'Nouveau chauffeur Grand Taxi ?'}
                 </div>
                 <button
                   type="button"
@@ -234,7 +233,7 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
                   className="inline-flex items-center gap-1.5 text-xs font-black text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-full border border-amber-200/80 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Register Grand Taxi Vehicle & Route</span>
+                  <span>{isRtl ? 'تسجيل طاكسي وخط جديد' : 'Inscrire mon Grand Taxi'}</span>
                 </button>
               </div>
             </form>
@@ -243,7 +242,7 @@ export const DriverAuthModal: React.FC<DriverAuthModalProps> = ({
           {/* Security Badge */}
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-500 text-center pt-2">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Authorized transport license verification & fleet security.</span>
+            <span>{isRtl ? 'تحقق ومصادقة معتمدة لسائقي الطاكسيات.' : 'Vérification agréée pour les chauffeurs professionnels.'}</span>
           </div>
         </div>
       </div>

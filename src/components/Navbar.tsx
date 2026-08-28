@@ -17,7 +17,6 @@ import { KANGORO_LOGO_URL } from '../constants';
 const LANGUAGE_OPTIONS: { code: Language; label: string; full: string; flag: string }[] = [
   { code: 'fr', label: 'FR', full: 'Français', flag: '🇫🇷' },
   { code: 'ar', label: 'عربي', full: 'العربية', flag: '🇲🇦' },
-  { code: 'en', label: 'EN', full: 'English', flag: '🇬🇧' },
 ];
 
 interface NavbarProps {
@@ -75,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-zinc-200 shadow-xs" dir={isRtl ? 'rtl' : 'ltr'}>
+    <header className="relative bg-white border-b border-zinc-200 shadow-xs" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20 gap-3">
           {/* Brand Logo - Official Kangoro Delivery */}

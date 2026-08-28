@@ -3,18 +3,12 @@ import {
   Truck, 
   Car, 
   MapPin, 
-  Phone, 
-  ShieldCheck, 
   Check, 
   X, 
   DollarSign, 
-  Luggage, 
   User, 
-  Sparkles,
-  FileCheck,
-  CheckCircle2,
-  Image as ImageIcon,
-  Building2
+  CheckCircle2, 
+  Image as ImageIcon
 } from 'lucide-react';
 import { TaxiDriver } from '../types';
 import { Language, translations } from '../utils/i18n';
@@ -46,16 +40,15 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('+212 6 ');
-  const [city, setCity] = useState('Casablanca');
   const [plate, setPlate] = useState('06-A-');
   const [permitNumber, setPermitNumber] = useState('AGR-');
-  const [vehicleModel, setVehicleModel] = useState('Mercedes-Benz E-Class Grand Taxi');
-  const [vehicleColor, setVehicleColor] = useState('Classic White');
-  const [vehicleType, setVehicleType] = useState<TaxiDriver['vehicleType']>('grand_taxi');
+  const [vehicleModel, setVehicleModel] = useState('Dacia Lodgy 7 Places Grand Taxi');
+  const [vehicleColor, setVehicleColor] = useState('Blanc Classique');
+  const [vehicleType] = useState<TaxiDriver['vehicleType']>('grand_taxi');
   const [originCity, setOriginCity] = useState('Casablanca');
   const [destinationCity, setDestinationCity] = useState('Rabat');
-  const [originStation, setOriginStation] = useState('Central Grand Taxi Station (Derb Omar)');
-  const [destinationStation, setDestinationStation] = useState('Rabat Ville Grand Taxi Station (Bab El Had)');
+  const [originStation, setOriginStation] = useState(isRtl ? 'محطة درب عمر' : 'Station Centrale Derb Omar');
+  const [destinationStation, setDestinationStation] = useState(isRtl ? 'محطة باب الأحد' : 'Station Bab El Had');
   const [maxParcels, setMaxParcels] = useState(6);
 
   // Update stations default presets whenever origin or destination city changes
@@ -64,15 +57,16 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
     if (route.stationsFrom && route.stationsFrom.length > 0) {
       setOriginStation(route.stationsFrom[0]);
     } else {
-      setOriginStation(`${originCity} Central Taxi Bay`);
+      setOriginStation(isRtl ? `محطة ${originCity}` : `Station Principale ${originCity}`);
     }
 
     if (route.stationsTo && route.stationsTo.length > 0) {
       setDestinationStation(route.stationsTo[0]);
     } else {
-      setDestinationStation(`${destinationCity} Main Terminal`);
+      setDestinationStation(isRtl ? `محطة ${destinationCity}` : `Station Principale ${destinationCity}`);
     }
-  }, [originCity, destinationCity]);
+  }, [originCity, destinationCity, isRtl]);
+
   const [flatBaseRate, setFlatBaseRate] = useState(18);
   const [basePricePerKg, setBasePricePerKg] = useState(3.5);
   const [acceptsDoorstep, setAcceptsDoorstep] = useState(true);
@@ -93,17 +87,17 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
       avatar: selectedAvatar,
       rating: 5.0,
       totalTrips: 1,
-      vehicleModel: vehicleModel.trim() || 'Grand Taxi Sedan',
+      vehicleModel: vehicleModel.trim() || 'Grand Taxi',
       vehiclePlate: plate.trim().toUpperCase(),
       vehicleColor,
       vehicleType,
       originCity,
       destinationCity,
-      departureTime: 'Departs in 30 mins',
+      departureTime: isRtl ? 'الانطلاق بعد 30 دقيقة' : 'Départ dans 30 min',
       departureTimestamp: Date.now() + 30 * 60 * 1000,
-      estimatedArrival: 'In ~1h 15m',
-      originStation: originStation.trim() || `${originCity} Central Taxi Bay`,
-      destinationStation: destinationStation.trim() || `${destinationCity} Main Terminal`,
+      estimatedArrival: isRtl ? 'خلال ساعة وربع' : 'En ~1h 15m',
+      originStation: originStation.trim() || (isRtl ? `محطة ${originCity}` : `Station ${originCity}`),
+      destinationStation: destinationStation.trim() || (isRtl ? `محطة ${destinationCity}` : `Station ${destinationCity}`),
       availableTrunkSpace: 'plenty',
       maxParcels: Number(maxParcels),
       currentParcelsCount: 0,
@@ -112,7 +106,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
       acceptsDoorstep,
       status: 'boarding',
       currentProgressPct: 0,
-      notes: `Permit: ${permitNumber.trim() || 'Verified'} • Operating daily on corridor.`
+      notes: isRtl ? `مأذونية: ${permitNumber.trim() || 'معتمد'} • رحلات يومية.` : `Permis: ${permitNumber.trim() || 'Vérifié'} • Ligne régulière.`
     };
 
     onRegisterDriver(newDriver);
@@ -126,7 +120,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-xs overflow-y-auto ${isRtl ? 'font-sans' : ''}`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-xs overflow-y-auto" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-zinc-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
@@ -144,7 +138,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
               <h3 className="font-extrabold text-sm sm:text-base text-zinc-100 flex items-center gap-2">
                 <span>{t.driverRegTitle}</span>
                 <span className="text-[10px] bg-amber-400 text-zinc-950 font-bold px-1.5 py-0.5 rounded uppercase">
-                  Grand Taxi
+                  {isRtl ? 'طاكسي كبير' : 'Grand Taxi'}
                 </span>
               </h3>
               <p className="text-[11px] text-zinc-400 leading-tight">{t.driverRegSubtitle}</p>
@@ -154,6 +148,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
           <button
             onClick={onClose}
             className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Fermer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -173,19 +168,19 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
               </p>
             </div>
 
-            <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 max-w-md mx-auto text-left space-y-2 text-xs">
+            <div className={`bg-zinc-50 border border-zinc-200 rounded-2xl p-4 max-w-md mx-auto space-y-2 text-xs ${isRtl ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                <span className="text-zinc-500">Chauffeur:</span>
+                <span className="text-zinc-500">{isRtl ? 'السائق :' : 'Chauffeur :'}</span>
                 <span className="font-bold text-zinc-900">{registeredDriver.name}</span>
               </div>
               <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                <span className="text-zinc-500">Matricule Taxi:</span>
+                <span className="text-zinc-500">{isRtl ? 'رقم الطاكسي :' : 'Matricule Taxi :'}</span>
                 <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
                   {registeredDriver.vehiclePlate}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Ligne:</span>
+                <span className="text-zinc-500">{isRtl ? 'خط السير :' : 'Ligne :'}</span>
                 <span className="font-bold text-zinc-900">{registeredDriver.originCity} ➔ {registeredDriver.destinationCity}</span>
               </div>
             </div>
@@ -216,7 +211,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Hassan El Mansouri"
+                    placeholder={isRtl ? 'مثال: حسن المنصوري' : 'Ex: Hassan El Mansouri'}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
@@ -270,7 +265,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
             {/* Vehicle & Taxi Permit Details */}
             <div className="space-y-3 pt-4 border-t border-zinc-200">
               <h4 className="text-xs font-extrabold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Car className="w-4 h-4 text-amber-500" /> {t.driverVehicleType} & Taxi License
+                <Car className="w-4 h-4 text-amber-500" /> {t.driverVehicleType} & {isRtl ? 'المأذونية' : 'Agrément'}
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -281,7 +276,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 06-A-45892"
+                    placeholder="06-A-45892"
                     value={plate}
                     onChange={(e) => setPlate(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-zinc-900 uppercase focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
@@ -294,7 +289,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. AGR-CAS-8841"
+                    placeholder="AGR-CAS-8841"
                     value={permitNumber}
                     onChange={(e) => setPermitNumber(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
@@ -310,11 +305,11 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                     onChange={(e) => setVehicleModel(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
                   >
-                    <option value="Mercedes-Benz 240D Classic Grand Taxi">Mercedes-Benz 240D (Classic Grand Taxi)</option>
-                    <option value="Dacia Lodgy 7-Seater Grand Taxi">Dacia Lodgy 7-Seater Grand Taxi</option>
-                    <option value="Mercedes-Benz Vito Intercity Shuttle">Mercedes-Benz Vito Intercity Shuttle</option>
-                    <option value="Peugeot 508 / 301 Express Sedan">Peugeot 508 / 301 Express Sedan</option>
-                    <option value="Hyundai H1 Intercity Minivan">Hyundai H1 Intercity Minivan</option>
+                    <option value="Dacia Lodgy 7 Places Grand Taxi">{isRtl ? 'داسيا لودجي 7 مقاعد' : 'Dacia Lodgy 7 Places'}</option>
+                    <option value="Mercedes-Benz 240D Classic Grand Taxi">{isRtl ? 'مرسيدس 240D كلاسيك' : 'Mercedes-Benz 240D Classic'}</option>
+                    <option value="Mercedes-Benz Vito Intercity Shuttle">{isRtl ? 'مرسيدس فيتو مكوك' : 'Mercedes-Benz Vito Navette'}</option>
+                    <option value="Peugeot 508 / 301 Express Sedan">{isRtl ? 'بيجو 508 سريعة' : 'Peugeot 508 / 301 Berline'}</option>
+                    <option value="Hyundai H1 Intercity Minivan">{isRtl ? 'هيونداي H1 ميني فان' : 'Hyundai H1 Minivan'}</option>
                   </select>
                 </div>
 
@@ -327,11 +322,11 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                     onChange={(e) => setVehicleColor(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
                   >
-                    <option value="Classic White">Blanc Classique (Casablanca / Rabat)</option>
-                    <option value="Ochre Yellow">Jaune Ocre (Marrakech / Sud)</option>
-                    <option value="Royal Blue">Bleu Royal (Tanger / Nord)</option>
-                    <option value="Sandy Beige">Beige Sable (Fès / Meknès)</option>
-                    <option value="Fire Red">Rouge Vif (Fès / Casablanca)</option>
+                    <option value="Blanc Classique">{isRtl ? 'أبيض كلاسيكي (الدار البيضاء / الرباط)' : 'Blanc Classique (Casablanca / Rabat)'}</option>
+                    <option value="Jaune Ocre">{isRtl ? 'أصفر خردلي (مراكش / الجنوب)' : 'Jaune Ocre (Marrakech / Sud)'}</option>
+                    <option value="Bleu Royal">{isRtl ? 'أزرق ملكي (طنجة / الشمال)' : 'Bleu Royal (Tanger / Nord)'}</option>
+                    <option value="Beige Sable">{isRtl ? 'بيج رملي (فاس / مكناس)' : 'Beige Sable (Fès / Meknès)'}</option>
+                    <option value="Rouge Vif">{isRtl ? 'أحمر قاني (فاس / وجدة)' : 'Rouge Vif (Fès / Oujda)'}</option>
                   </select>
                 </div>
               </div>
@@ -340,7 +335,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
             {/* Operating Corridor & Hubs */}
             <div className="space-y-3 pt-4 border-t border-zinc-200">
               <h4 className="text-xs font-extrabold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-amber-500" /> Route Corridor & Grand Taxi Stations
+                <MapPin className="w-4 h-4 text-amber-500" /> {isRtl ? 'خط السير ومحطات الطاكسي' : 'Ligne & Stations Grand Taxi'}
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -353,13 +348,13 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                     onChange={(e) => setOriginCity(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 cursor-pointer"
                   >
-                    <option value="Casablanca">Casablanca</option>
-                    <option value="Rabat">Rabat</option>
-                    <option value="Marrakech">Marrakech</option>
-                    <option value="Tangier">Tangier</option>
-                    <option value="Fes">Fes</option>
-                    <option value="Agadir">Agadir</option>
-                    <option value="Meknes">Meknes</option>
+                    <option value="Casablanca">{isRtl ? 'الدار البيضاء' : 'Casablanca'}</option>
+                    <option value="Rabat">{isRtl ? 'الرباط' : 'Rabat'}</option>
+                    <option value="Marrakech">{isRtl ? 'مراكش' : 'Marrakech'}</option>
+                    <option value="Tangier">{isRtl ? 'طنجة' : 'Tanger'}</option>
+                    <option value="Fes">{isRtl ? 'فاس' : 'Fès'}</option>
+                    <option value="Agadir">{isRtl ? 'أكادير' : 'Agadir'}</option>
+                    <option value="Meknes">{isRtl ? 'مكناس' : 'Meknès'}</option>
                   </select>
                 </div>
 
@@ -372,20 +367,20 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                     onChange={(e) => setDestinationCity(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 focus:ring-2 focus:ring-amber-500 cursor-pointer"
                   >
-                    <option value="Rabat">Rabat</option>
-                    <option value="Casablanca">Casablanca</option>
-                    <option value="Marrakech">Marrakech</option>
-                    <option value="Tangier">Tangier</option>
-                    <option value="Fes">Fes</option>
-                    <option value="Agadir">Agadir</option>
-                    <option value="Meknes">Meknes</option>
+                    <option value="Rabat">{isRtl ? 'الرباط' : 'Rabat'}</option>
+                    <option value="Casablanca">{isRtl ? 'الدار البيضاء' : 'Casablanca'}</option>
+                    <option value="Marrakech">{isRtl ? 'مراكش' : 'Marrakech'}</option>
+                    <option value="Tangier">{isRtl ? 'طنجة' : 'Tanger'}</option>
+                    <option value="Fes">{isRtl ? 'فاس' : 'Fès'}</option>
+                    <option value="Agadir">{isRtl ? 'أكادير' : 'Agadir'}</option>
+                    <option value="Meknes">{isRtl ? 'مكناس' : 'Meknès'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1 flex items-center justify-between">
                     <span>{t.driverOriginHub}</span>
-                    <span className="text-[10px] text-amber-700 font-normal">Taxi Station / Bay</span>
+                    <span className="text-[10px] text-amber-700 font-normal">{isRtl ? 'محطة الانطلاق' : 'Station Départ'}</span>
                   </label>
                   {getRouteDetails(originCity, destinationCity).stationsFrom?.length > 0 ? (
                     <div className="space-y-1.5">
@@ -397,13 +392,13 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                         {getRouteDetails(originCity, destinationCity).stationsFrom.map((stn, idx) => (
                           <option key={idx} value={stn}>{stn}</option>
                         ))}
-                        <option value="custom">✏️ Other Custom Station...</option>
+                        <option value="custom">{isRtl ? '✏️ محطة أخرى...' : '✏️ Autre station...'}</option>
                       </select>
                       {(!getRouteDetails(originCity, destinationCity).stationsFrom.includes(originStation) || originStation === 'custom') && (
                         <input
                           type="text"
                           required
-                          placeholder="Enter origin taxi station name"
+                          placeholder={isRtl ? 'اسم محطة الانطلاق' : 'Nom de la station de départ'}
                           value={originStation === 'custom' ? '' : originStation}
                           onChange={(e) => setOriginStation(e.target.value)}
                           className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
@@ -424,7 +419,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                 <div>
                   <label className="block text-[11px] font-bold text-zinc-700 uppercase mb-1 flex items-center justify-between">
                     <span>{t.driverDestinationHub}</span>
-                    <span className="text-[10px] text-amber-700 font-normal">Arrival Station / Bay</span>
+                    <span className="text-[10px] text-amber-700 font-normal">{isRtl ? 'محطة الوصول' : 'Station Arrivée'}</span>
                   </label>
                   {getRouteDetails(originCity, destinationCity).stationsTo?.length > 0 ? (
                     <div className="space-y-1.5">
@@ -436,13 +431,13 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
                         {getRouteDetails(originCity, destinationCity).stationsTo.map((stn, idx) => (
                           <option key={idx} value={stn}>{stn}</option>
                         ))}
-                        <option value="custom">✏️ Other Custom Station...</option>
+                        <option value="custom">{isRtl ? '✏️ محطة أخرى...' : '✏️ Autre station...'}</option>
                       </select>
                       {(!getRouteDetails(originCity, destinationCity).stationsTo.includes(destinationStation) || destinationStation === 'custom') && (
                         <input
                           type="text"
                           required
-                          placeholder="Enter arrival taxi station name"
+                          placeholder={isRtl ? 'اسم محطة الوصول' : 'Nom de la station d’arrivée'}
                           value={destinationStation === 'custom' ? '' : destinationStation}
                           onChange={(e) => setDestinationStation(e.target.value)}
                           className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-hidden"
@@ -465,7 +460,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
             {/* Capacity & Rates */}
             <div className="space-y-3 pt-4 border-t border-zinc-200">
               <h4 className="text-xs font-extrabold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-amber-500" /> Trunk Capacity & Parcel Rates
+                <DollarSign className="w-4 h-4 text-amber-500" /> {isRtl ? 'سعة الصندوق والتعريفة' : 'Capacité du Coffre & Tarifs'}
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -529,7 +524,7 @@ export const DriverRegisterModal: React.FC<DriverRegisterModalProps> = ({
             </div>
 
             {/* Submit Bar */}
-            <div className="pt-4 border-t border-zinc-200 flex items-center justify-end gap-3">
+            <div className={`pt-4 border-t border-zinc-200 flex items-center ${isRtl ? 'justify-start' : 'justify-end'} gap-3`}>
               <button
                 type="button"
                 onClick={onClose}
