@@ -191,13 +191,25 @@ export default function App() {
   }, [chatMessages]);
 
   // Require Auth Trigger Helper
-  const handleRequireAuth = (mode: 'login' | 'register' = 'register', afterAuthCallback?: () => void) => {
-    setAuthModalMode(mode);
-    if (afterAuthCallback) {
-      authSuccessCallbackRef.current = afterAuthCallback;
-    } else {
-      authSuccessCallbackRef.current = null;
+  const handleRequireAuth = (
+    modeOrCallback?: 'login' | 'register' | (() => void),
+    maybeCallback?: () => void
+  ) => {
+    let mode: 'login' | 'register' = 'register';
+    let callback: (() => void) | null = null;
+
+    if (typeof modeOrCallback === 'function') {
+      callback = modeOrCallback;
+      mode = 'register';
+    } else if (typeof modeOrCallback === 'string') {
+      mode = modeOrCallback;
+      if (maybeCallback) {
+        callback = maybeCallback;
+      }
     }
+
+    setAuthModalMode(mode);
+    authSuccessCallbackRef.current = callback;
     setIsAuthModalOpen(true);
   };
 

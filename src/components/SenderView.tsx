@@ -41,7 +41,7 @@ interface SenderViewProps {
   onNavigateToDashboard?: () => void;
   initialPrefillData?: Partial<ParcelDelivery> | null;
   currentUser?: SenderUser | null;
-  onRequireAuth: (afterAuthCallback?: () => void) => void;
+  onRequireAuth: (modeOrCallback?: 'login' | 'register' | (() => void), afterAuthCallback?: () => void) => void;
   language?: Language;
 }
 
@@ -113,6 +113,23 @@ export const SenderView: React.FC<SenderViewProps> = ({
       setSenderPhone(currentUser.phone);
     }
   }, [currentUser]);
+
+  // Sync prefill data when arriving from dashboard or stations view
+  useEffect(() => {
+    if (initialPrefillData) {
+      if (initialPrefillData.originCity) setOriginCity(initialPrefillData.originCity);
+      if (initialPrefillData.destinationCity) setDestinationCity(initialPrefillData.destinationCity);
+      if (initialPrefillData.category) setParcelCategory(initialPrefillData.category);
+      if (initialPrefillData.title) setParcelTitle(initialPrefillData.title);
+      if (initialPrefillData.description) setParcelDescription(initialPrefillData.description);
+      if (initialPrefillData.weightKg) setWeightKg(initialPrefillData.weightKg);
+      if (initialPrefillData.isFragile !== undefined) setIsFragile(initialPrefillData.isFragile);
+      if (initialPrefillData.declaredValue) setDeclaredValue(initialPrefillData.declaredValue);
+      if (initialPrefillData.driver) {
+        setSelectedDriver(initialPrefillData.driver);
+      }
+    }
+  }, [initialPrefillData]);
 
   // Calculate route details and available drivers
   const routeInfo = getRouteDetails(originCity, destinationCity);
@@ -385,9 +402,20 @@ export const SenderView: React.FC<SenderViewProps> = ({
             {activeCityModal === 'transition' && (
               <TaxiRouteTransition
                 originCity={originCity}
+                currentDestinationCity={destinationCity}
                 language={language}
                 onComplete={() => {
                   setActiveCityModal('destination');
+                }}
+                onSelectDestination={(destCity) => {
+                  setDestinationCity(destCity);
+                  setActiveCityModal(null);
+                }}
+                onBackToOrigin={() => {
+                  setActiveCityModal('origin');
+                }}
+                onClose={() => {
+                  setActiveCityModal(null);
                 }}
               />
             )}

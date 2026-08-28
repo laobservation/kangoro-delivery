@@ -454,32 +454,15 @@ export const CitySelector: React.FC<CitySelectorProps> = ({
           }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
               <div className="flex items-center justify-between gap-3">
-                {/* Back / Step navigation button */}
-                <div className="flex items-center gap-2.5">
-                  {!isOrigin && onBackToOrigin ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        onBackToOrigin();
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-black transition-colors cursor-pointer border-2 border-emerald-300 shadow-xs"
-                    >
-                      <ArrowLeft className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />
-                      <span>{tStrings.destination.backBtn}</span>
-                    </button>
-                  ) : null}
-
-                  {/* Step Pill */}
-                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide border-2 shadow-xs ${
-                    isOrigin 
-                      ? 'bg-amber-100 text-amber-950 border-amber-400' 
-                      : 'bg-emerald-100 text-emerald-950 border-emerald-400'
-                  }`}>
-                    <span className={`w-2.5 h-2.5 rounded-full ${isOrigin ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
-                    {isOrigin ? tStrings.origin.stepBadge : tStrings.destination.stepBadge}
-                  </span>
-                </div>
+                {/* Step Pill */}
+                <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide border-2 shadow-xs ${
+                  isOrigin 
+                    ? 'bg-amber-100 text-amber-950 border-amber-400' 
+                    : 'bg-emerald-100 text-emerald-950 border-emerald-400'
+                }`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${isOrigin ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
+                  {isOrigin ? tStrings.origin.stepBadge : tStrings.destination.stepBadge}
+                </span>
 
                 {/* Close Button */}
                 <button
